@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -18,10 +18,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -69,7 +71,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\opennurbs;..\..\megapoly\megapoly\util;..\..\megapoly\megapoly\include\vecmath-c++-1.2-1.4;..\..\megapoly\megapoly\render;..\..\megapoly\megapoly\lib\libpng-1.2.29\include;..\..\megapoly\megapoly\lib\zlib-1.2.3\include;..\lib\inc;..\lib\Cg1.5\include;..\lib\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\opennurbs;..\..\megapoly\megapoly\util;..\..\megapoly\megapoly\include\vecmath-c++-1.2-1.4;..\..\megapoly\megapoly\render;..\lib\libpng-1.6.16\include;..\lib\zlib-1.2.8;..\lib\inc;..\lib\Cg\include;..\lib\glew-1.7.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
@@ -78,9 +80,9 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>render.lib;glew32.lib;cg.lib;cgGL.lib;libpng.lib;zlib.lib;opennurbs_static.lib;glut32.lib;glu32.lib;opengl32.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>render.lib;glew32.lib;cg.lib;cgGL.lib;libpng16.lib;zlib.lib;opennurbs_static.lib;glut32.lib;glu32.lib;opengl32.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>bspsgpu.exe</OutputFile>
-      <AdditionalLibraryDirectories>..\lib\Cg1.5\lib;..\opennurbs\ReleaseStaticLib;..\..\megapoly\megapoly\lib\libpng-1.2.29\lib;..\..\megapoly\megapoly\lib\zlib-1.2.3\lib;..\..\megapoly\megapoly\render\release;..\lib\glew\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib\Cg\lib;..\opennurbs\ReleaseStaticLib;..\..\megapoly\megapoly\render\release;..\lib\glew-1.7.0\lib;..\lib\libpng-1.6.16\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>MSVCRT.lib;LIBC.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -105,12 +107,6 @@
     <ClInclude Include="GLMeshVBO.hxx" />
     <ClInclude Include="POLIO.hxx" />
     <ClInclude Include="RenderTextureFBO.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\megapoly\megapoly\VC\render\render.vcxproj">
-      <Project>{6543e4dc-0552-4f61-9420-a8268aff8a9a}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

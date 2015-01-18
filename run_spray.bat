@@ -1,0 +1,1 @@
+bspsgpu.exe data\spray.3dm
