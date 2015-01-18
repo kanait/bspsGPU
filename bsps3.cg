@@ -1,0 +1,208 @@
+////////////////////////////////////////////////////////////////////
+//
+// $Header$
+//
+// Non-Uniform B-Spline Surface fragment program
+//
+// Copyright (c) 2004-2005 by Keio Research Institute at SFC
+// All rights reserved. 
+//
+////////////////////////////////////////////////////////////////////
+
+//
+// a cubic B-spline basis function
+// 
+void basisFunc3( float t, float4 knot0, float4 knot1, float4 kd0, float4 kd1,
+		 out float4 outN )
+{
+  float N[6];
+
+  // p = 0
+  N[0] = 1.0f;
+  
+  // p = 1
+  N[1] = (knot1.x - t) * N[0] / kd0.x;
+  N[2] = (t - knot0.z) * N[0] / kd0.x;
+  
+  // p = 2
+  N[3] = (knot1.x - t) * N[1] / kd0.y;
+  N[4] = (t - knot0.y) * N[1] / kd0.y + (knot1.y - t) * N[2] / kd0.z;
+  N[5] = (t - knot0.z) * N[2] / kd0.z;
+  
+  // p = 3
+  outN.x = (knot1.x - t) * N[3] / kd1.x;
+  outN.y = (t - knot0.x) * N[3] / kd1.x + (knot1.y - t) * N[4] / kd1.y;
+  outN.z = (t - knot0.y) * N[4] / kd1.y + (knot1.z - t) * N[5] / kd1.z;
+  outN.w = (t - knot0.z) * N[5] / kd1.z;
+}
+
+//
+// a cubic B-spline basis function and its 1st order derivative
+//
+void basisFuncDeriv3( float t,
+		      float4 knot0, float4 knot1,
+		      float4 kd0, float4 kd1,
+		      out float4 outN,
+		      out float4 outNt
+		      )
+{
+  float N[6];
+
+  // p = 0
+  N[0] = 1.0f;
+  
+  // p = 1
+  N[1] = (knot1.x - t) * N[0] / kd0.x;
+  N[2] = (t - knot0.z) * N[0] / kd0.x;
+  
+  // p = 2
+  N[3] = (knot1.x - t) * N[1] / kd0.y;
+  N[4] = (t - knot0.y) * N[1] / kd0.y + (knot1.y - t) * N[2] / kd0.z;
+  N[5] = (t - knot0.z) * N[2] / kd0.z;
+  
+  // p = 3
+  outN.x = (knot1.x - t) * N[3] / kd1.x;
+  outN.y = (t - knot0.x) * N[3] / kd1.x + (knot1.y - t) * N[4] / kd1.y;
+  outN.z = (t - knot0.y) * N[4] / kd1.y + (knot1.z - t) * N[5] / kd1.z;
+  outN.w = (t - knot0.z) * N[5] / kd1.z;
+
+  // 1st order derivative
+  outNt.x = -3.0 * N[3] / kd1.x;
+  outNt.y =  3.0 * N[3] / kd1.x - 3.0 * N[4] / kd1.y;
+  outNt.z =  3.0 * N[4] / kd1.y - 3.0 * N[5] / kd1.z;
+  outNt.w =  3.0 * N[5] / kd1.z;
+}
+
+void eval3( float u,
+	    float v,
+	    float fid,
+	    uniform samplerRECT ukvTex,
+	    uniform samplerRECT uknotTex2D,
+	    uniform samplerRECT vkvTex,
+	    uniform samplerRECT vknotTex2D,
+	    uniform samplerRECT cpTex,
+	    out float4 pt,
+	    out float4 nm )
+{
+  //
+  // u direction
+  // 
+
+  // do binary search in u direction
+  float uid = binarySearch( u, fid, BSP_CUBIC, ukvTex );
+  float iu = uid - 3;
+
+  // fetch the number of knots and knot differences 
+  //float4 ua = texRECT( uknotTex2D, float2(0, fid) );
+  // fetch 6 knots and 6 knot differences in u direction
+  float  ub = 4 * iu;
+  float4 uknot0 = texRECT( uknotTex2D, float2(ub,   fid) );
+  float4 uknot1 = texRECT( uknotTex2D, float2(ub+1, fid) );
+  float4 ukd0   = texRECT( uknotTex2D, float2(ub+2, fid) );
+  float4 ukd1   = texRECT( uknotTex2D, float2(ub+3, fid) );
+//   float4 ukd0, ukd1;
+//   ukd0.x = uknot1.x - uknot0.z;
+//   ukd0.y = uknot1.x - uknot0.y;
+//   ukd0.z = uknot1.y - uknot0.z;
+//   ukd1.x = uknot1.x - uknot0.x;
+//   ukd1.y = uknot1.y - uknot0.y;
+//   ukd1.z = uknot1.z - uknot0.z;
+
+  // calculate cubic B-spline basis functions in u direction
+//   float4 Nu = basisFunc3( u, uknot0, uknot1, ukd0, ukd1 );
+  float4 Nu, dNu;
+  basisFuncDeriv3( u, uknot0, uknot1, ukd0, ukd1, Nu, dNu );
+  	      
+  //
+  // v direction
+  // 
+
+  // do binary search in v direction
+  float vid = binarySearch( v, fid, BSP_CUBIC, vkvTex );
+  float iv = vid - 3;
+
+  // fetch the number of knots and knot differences 
+  //float4 va = texRECT( vknotTex2D, float2(0, fid) );
+  // fetch 6 knots and 6 knot differences in v direction
+  float  vb = 4 * iv;
+  float4 vknot0 = texRECT( vknotTex2D, float2(vb,   fid) );
+  float4 vknot1 = texRECT( vknotTex2D, float2(vb+1, fid) );
+  float4 vkd0   = texRECT( vknotTex2D, float2(vb+2, fid) );
+  float4 vkd1   = texRECT( vknotTex2D, float2(vb+3, fid) );
+//   float4 vkd0, vkd1;
+//   vkd0.x = vknot1.x - vknot0.z;
+//   vkd0.y = vknot1.x - vknot0.y;
+//   vkd0.z = vknot1.y - vknot0.z;
+//   vkd1.x = vknot1.x - vknot0.x;
+//   vkd1.y = vknot1.y - vknot0.y;
+//   vkd1.z = vknot1.z - vknot0.z;
+
+  // calculate cubic B-spline basis functions in v direction
+  float4 Nv, dNv;
+  basisFuncDeriv3( v, vknot0, vknot1, vkd0, vkd1, Nv, dNv );
+
+  //
+  // fetch 16 control points
+  //
+
+  // cc.x: degree in u direction
+  // cc.y: degree in v direction
+  // cc.z: the number of control points in u direction
+  // cc.w: the number of control points in v direction
+  float4 cc = texRECT( cpTex, float2(0, fid) ); 
+
+  float4 Cp[16];
+  Cp[0]  = texRECT( cpTex, float2((iu)   * cc.w + (iv) + 1,   fid) );
+  Cp[1]  = texRECT( cpTex, float2((iu+1) * cc.w + (iv) + 1,   fid) );
+  Cp[2]  = texRECT( cpTex, float2((iu+2) * cc.w + (iv) + 1,   fid) );
+  Cp[3]  = texRECT( cpTex, float2((iu+3) * cc.w + (iv) + 1,   fid) );
+
+  Cp[4]  = texRECT( cpTex, float2((iu)   * cc.w + (iv+1) + 1, fid) );
+  Cp[5]  = texRECT( cpTex, float2((iu+1) * cc.w + (iv+1) + 1, fid) );
+  Cp[6]  = texRECT( cpTex, float2((iu+2) * cc.w + (iv+1) + 1, fid) );
+  Cp[7]  = texRECT( cpTex, float2((iu+3) * cc.w + (iv+1) + 1, fid) );
+
+  Cp[8]  = texRECT( cpTex, float2((iu)   * cc.w + (iv+2) + 1, fid) );
+  Cp[9]  = texRECT( cpTex, float2((iu+1) * cc.w + (iv+2) + 1, fid) );
+  Cp[10] = texRECT( cpTex, float2((iu+2) * cc.w + (iv+2) + 1, fid) );
+  Cp[11] = texRECT( cpTex, float2((iu+3) * cc.w + (iv+2) + 1, fid) );
+
+  Cp[12] = texRECT( cpTex, float2((iu)   * cc.w + (iv+3) + 1, fid) );
+  Cp[13] = texRECT( cpTex, float2((iu+1) * cc.w + (iv+3) + 1, fid) );
+  Cp[14] = texRECT( cpTex, float2((iu+2) * cc.w + (iv+3) + 1, fid) );
+  Cp[15] = texRECT( cpTex, float2((iu+3) * cc.w + (iv+3) + 1, fid) );
+
+//   // position
+  pt = ( Nu.x * Nv.x * Cp[0]  + Nu.y * Nv.x * Cp[1] + 
+	 Nu.z * Nv.x * Cp[2]  + Nu.w * Nv.x * Cp[3] +
+	 Nu.x * Nv.y * Cp[4]  + Nu.y * Nv.y * Cp[5] + 
+	 Nu.z * Nv.y * Cp[6]  + Nu.w * Nv.y * Cp[7] +
+	 Nu.x * Nv.z * Cp[8]  + Nu.y * Nv.z * Cp[9] + 
+	 Nu.z * Nv.z * Cp[10] + Nu.w * Nv.z * Cp[11] +
+	 Nu.x * Nv.w * Cp[12] + Nu.y * Nv.w * Cp[13] + 
+	 Nu.z * Nv.w * Cp[14] + Nu.w * Nv.w * Cp[15] );
+
+  // 1st derivative in u direction
+  float4 pu = ( dNu.x * Nv.x * Cp[0]  + dNu.y * Nv.x * Cp[1] + 
+		dNu.z * Nv.x * Cp[2]  + dNu.w * Nv.x * Cp[3] +
+		dNu.x * Nv.y * Cp[4]  + dNu.y * Nv.y * Cp[5] + 
+		dNu.z * Nv.y * Cp[6]  + dNu.w * Nv.y * Cp[7] +
+		dNu.x * Nv.z * Cp[8]  + dNu.y * Nv.z * Cp[9] + 
+		dNu.z * Nv.z * Cp[10] + dNu.w * Nv.z * Cp[11] +
+		dNu.x * Nv.w * Cp[12] + dNu.y * Nv.w * Cp[13] + 
+		dNu.z * Nv.w * Cp[14] + dNu.w * Nv.w * Cp[15] );
+
+  // 1st derivative in v direction
+  float4 pv = ( Nu.x * dNv.x * Cp[0]  + Nu.y * dNv.x * Cp[1] + 
+		Nu.z * dNv.x * Cp[2]  + Nu.w * dNv.x * Cp[3] +
+		Nu.x * dNv.y * Cp[4]  + Nu.y * dNv.y * Cp[5] + 
+		Nu.z * dNv.y * Cp[6]  + Nu.w * dNv.y * Cp[7] +
+		Nu.x * dNv.z * Cp[8]  + Nu.y * dNv.z * Cp[9] + 
+		Nu.z * dNv.z * Cp[10] + Nu.w * dNv.z * Cp[11] +
+		Nu.x * dNv.w * Cp[12] + Nu.y * dNv.w * Cp[13] + 
+		Nu.z * dNv.w * Cp[14] + Nu.w * dNv.w * Cp[15] );
+
+  // normal
+  nm = float4( normalize( cross( pu.xyz, pv.xyz ) ), 1.0f );
+}
+

@@ -1,0 +1,352 @@
+////////////////////////////////////////////////////////////////////
+//
+// $Id: bsps.cg,v 1.6 2005/01/05 14:07:53 kanai Exp $
+//
+// Non-Uniform B-Spline Surface fragment program
+//
+// Copyright (c) 2004-2005 by Keio Research Institute at SFC
+// All rights reserved. 
+//
+////////////////////////////////////////////////////////////////////
+
+//
+// a quintic B-spline basis function
+// 
+// knot[i-4] ... knot0.x
+// knot[i-3] ... knot0.y
+// knot[i-2] ... knot0.z
+// knot[i-1] ... knot0.w
+
+// knot[ i ] ... knot1.x
+// knot[i+1] ... knot1.y
+// knot[i+2] ... knot1.z
+// knot[i+3] ... knot1.w
+
+// knot[i+4] ... knot2.x
+// knot[i+5] ... knot2.y
+//
+// knot[i+1] - knot[ i ] ... kd0.x
+// knot[i+1] - knot[i-1] ... kd0.y
+// knot[i+2] - knot[ i ] ... kd0.z
+// knot[i+1] - knot[i-2] ... kd0.w
+//
+// knot[i+2] - knot[i-1] ... kd1.x
+// knot[i+3] - knot[ i ] ... kd1.y
+// knot[i+1] - knot[i-3] ... kd1.z
+// knot[i+2] - knot[i-2] ... kd1.w
+//
+// knot[i+3] - knot[i-1] ... kd2.x
+// knot[i+4] - knot[ i ] ... kd2.y
+// knot[i+1] - knot[i-4] ... kd2.z
+// knot[i+2] - knot[i-3] ... kd2.w
+//
+// knot[i+3] - knot[i-2] ... kd3.x
+// knot[i+4] - knot[i-1] ... kd3.y
+// knot[i+5] - knot[ i ] ... kd3.z
+//
+
+//   // p = 0
+//   N[0] = 1.0f;
+  
+//   // p = 1
+//   N[1]  =                                                    (knot[i+1] - t) * N[0] / (knot[i+1] - knot[ i ]);
+//   N[2]  = (t - knot[ i ]) * N[0] / (knot[i+1] - knot[ i ]);
+  
+//   // p = 2
+//   N[3]  =                                                    (knot[i+1] - t) * N[1] / (knot[i+1] - knot[i-1]);
+//   N[4]  = (t - knot[i-1]) * N[1] / (knot[i+1] - knot[i-1]) + (knot[i+2] - t) * N[2] / (knot[i+2] - knot[ i ]);
+//   N[5]  = (t - knot[ i ]) * N[2] / (knot[i+2] - knot[ i ]);
+  
+//   // p = 3
+//   N[6]  =                                                    (knot[i+1] - t) * N[3] / (knot[i+1] - knot[i-2]);
+//   N[7]  = (t - knot[i-2]) * N[3] / (knot[i+1] - knot[i-2]) + (knot[i+2] - t) * N[4] / (knot[i+2] - knot[i-1]);
+//   N[8]  = (t - knot[i-1]) * N[4] / (knot[i+2] - knot[i-1]) + (knot[i+3] - t) * N[5] / (knot[i+3] - knot[ i ]);
+//   N[9]  = (t - knot[ i ]) * N[5] / (knot[i+3] - knot[ i ]);
+
+//   // p = 4
+//   N[10] =                                                    (knot[i+1] - t) * N[6] / (knot[i+1] - knot[i-3]);
+//   N[11] = (t - knot[i-3]) * N[6] / (knot[i+1] - knot[i-3]) + (knot[i+2] - t) * N[7] / (knot[i+2] - knot[i-2]);
+//   N[12] = (t - knot[i-2]) * N[7] / (knot[i+2] - knot[i-2]) + (knot[i+3] - t) * N[8] / (knot[i+3] - knot[i-1]);
+//   N[13] = (t - knot[i-1]) * N[8] / (knot[i+3] - knot[i-1]) + (knot[i+4] - t) * N[9] / (knot[i+4] - knot[ i ]);
+//   N[14] = (t - knot[ i ]) * N[9] / (knot[i+4] - knot[ i ]);
+
+//   // p = 5
+//   outN0.x =                                                     (knot[i+1] - t) * N[10] / (knot[i+1] - knot[i-4]);
+//   outN0.y = (t - knot[i-4]) * N[10] / (knot[i+1] - knot[i-4]) + (knot[i+2] - t) * N[11] / (knot[i+2] - knot[i-3]);
+//   outN0.z = (t - knot[i-3]) * N[11] / (knot[i+2] - knot[i-3]) + (knot[i+3] - t) * N[12] / (knot[i+3] - knot[i-2]);
+//   outN1.x = (t - knot[i-2]) * N[12] / (knot[i+3] - knot[i-2]) + (knot[i+4] - t) * N[13] / (knot[i+4] - knot[i-1]);
+//   outN1.y = (t - knot[i-1]) * N[13] / (knot[i+4] - knot[i-1]) + (knot[i+5] - t) * N[14] / (knot[i+5] - knot[ i ]);
+//   outN1.z = (t - knot[ i ]) * N[14] / (knot[i+5] - knot[ i ]);
+
+void basisFunc5( float t,
+		 float4 knot0, float4 knot1, float4 knot2,
+		 float4 kd0, float4 kd1, float4 kd2, float4 kd3,
+		 out float outN[6]
+		 )
+{
+  float N[15];
+
+  // p = 0
+  N[0] = 1.0f;
+  
+  // p = 1
+  N[1]  =                                  (knot1.y - t) * N[0] / (kd0.x);
+  N[2]  = (t - knot1.x) * N[0] / (kd0.x);
+  
+  // p = 2
+  N[3]  =                                  (knot1.y - t) * N[1] / (kd0.y);
+  N[4]  = (t - knot0.w) * N[1] / (kd0.y) + (knot1.z - t) * N[2] / (kd0.z);
+  N[5]  = (t - knot1.x) * N[2] / (kd0.z);
+  
+  // p = 3
+  N[6]  =                                  (knot1.y - t) * N[3] / (kd0.w);
+  N[7]  = (t - knot0.z) * N[3] / (kd0.w) + (knot1.z - t) * N[4] / (kd1.x);
+  N[8]  = (t - knot0.w) * N[4] / (kd1.x) + (knot1.w - t) * N[5] / (kd1.y);
+  N[9]  = (t - knot1.x) * N[5] / (kd1.y);
+
+  // p = 4
+  N[10] =                                  (knot1.y - t) * N[6] / (kd1.z);
+  N[11] = (t - knot0.y) * N[6] / (kd1.z) + (knot1.z - t) * N[7] / (kd1.w);
+  N[12] = (t - knot0.z) * N[7] / (kd1.w) + (knot1.w - t) * N[8] / (kd2.x);
+  N[13] = (t - knot0.w) * N[8] / (kd2.x) + (knot2.x - t) * N[9] / (kd2.y);
+  N[14] = (t - knot1.x) * N[9] / (kd2.y);
+
+  // p = 5
+  outN[0] =                                   (knot1.y - t) * N[10] / (kd2.z);
+  outN[1] = (t - knot0.x) * N[10] / (kd2.z) + (knot1.z - t) * N[11] / (kd2.w);
+  outN[2] = (t - knot0.y) * N[11] / (kd2.w) + (knot1.w - t) * N[12] / (kd3.x);
+  outN[3] = (t - knot0.z) * N[12] / (kd3.x) + (knot2.x - t) * N[13] / (kd3.y);
+  outN[4] = (t - knot0.w) * N[13] / (kd3.y) + (knot2.y - t) * N[14] / (kd3.z);
+  outN[5] = (t - knot1.x) * N[14] / (kd3.z);
+}
+
+void basisFuncDeriv5( float t,
+		      float4 knot0, float4 knot1, float4 knot2,
+		      float4 kd0, float4 kd1, float4 kd2, float4 kd3,
+		      out float outN[6], out float outNt[6]
+		      )
+{
+  float N[15];
+
+  // p = 0
+  N[0] = 1.0f;
+  
+  // p = 1
+  N[1]  =                                  (knot1.y - t) * N[0] / (kd0.x);
+  N[2]  = (t - knot1.x) * N[0] / (kd0.x);
+  
+  // p = 2
+  N[3]  =                                  (knot1.y - t) * N[1] / (kd0.y);
+  N[4]  = (t - knot0.w) * N[1] / (kd0.y) + (knot1.z - t) * N[2] / (kd0.z);
+  N[5]  = (t - knot1.x) * N[2] / (kd0.z);
+  
+  // p = 3
+  N[6]  =                                  (knot1.y - t) * N[3] / (kd0.w);
+  N[7]  = (t - knot0.z) * N[3] / (kd0.w) + (knot1.z - t) * N[4] / (kd1.x);
+  N[8]  = (t - knot0.w) * N[4] / (kd1.x) + (knot1.w - t) * N[5] / (kd1.y);
+  N[9]  = (t - knot1.x) * N[5] / (kd1.y);
+
+  // p = 4
+  N[10] =                                  (knot1.y - t) * N[6] / (kd1.z);
+  N[11] = (t - knot0.y) * N[6] / (kd1.z) + (knot1.z - t) * N[7] / (kd1.w);
+  N[12] = (t - knot0.z) * N[7] / (kd1.w) + (knot1.w - t) * N[8] / (kd2.x);
+  N[13] = (t - knot0.w) * N[8] / (kd2.x) + (knot2.x - t) * N[9] / (kd2.y);
+  N[14] = (t - knot1.x) * N[9] / (kd2.y);
+
+  // p = 5
+  outN[0] =                                   (knot1.y - t) * N[10] / (kd2.z);
+  outN[1] = (t - knot0.x) * N[10] / (kd2.z) + (knot1.z - t) * N[11] / (kd2.w);
+  outN[2] = (t - knot0.y) * N[11] / (kd2.w) + (knot1.w - t) * N[12] / (kd3.x);
+  outN[3] = (t - knot0.z) * N[12] / (kd3.x) + (knot2.x - t) * N[13] / (kd3.y);
+  outN[4] = (t - knot0.w) * N[13] / (kd3.y) + (knot2.y - t) * N[14] / (kd3.z);
+  outN[5] = (t - knot1.x) * N[14] / (kd3.z);
+
+  // 1st order derivative
+  outNt[0] =                       - 5.0 * N[10] / (kd2.z);
+  outNt[1] = 5.0 * N[10] / (kd2.z) - 5.0 * N[11] / (kd2.w);
+  outNt[2] = 5.0 * N[11] / (kd2.w) - 5.0 * N[12] / (kd3.x);
+  outNt[3] = 5.0 * N[12] / (kd3.x) - 5.0 * N[13] / (kd3.y);
+  outNt[4] = 5.0 * N[13] / (kd3.y) - 5.0 * N[14] / (kd3.z);
+  outNt[5] = 5.0 * N[14] / (kd3.z);
+}
+
+void eval5( float u,
+	    float v,
+	    float fid,
+	    uniform samplerRECT ukvTex,
+	    uniform samplerRECT uknotTex2D,
+	    uniform samplerRECT vkvTex,
+	    uniform samplerRECT vknotTex2D,
+	    uniform samplerRECT cpTex,
+	    out float4 pt,
+	    out float4 nm )
+{
+  //
+  // u direction
+  // 
+
+  // do binary search in u direction
+  float uid = binarySearch( u, fid, BSP_QUINTIC, ukvTex );
+  float iu = uid - 5;
+
+  // fetch the number of knots and knot differences 
+  //float4 ua = texRECT( uknotTex2D, float2(0, fid) );
+  // fetch 6 knots and 6 knot differences in u direction
+  float  ub = 7 * iu;
+  float4 uknot0 = texRECT( uknotTex2D, float2(ub,   fid) );
+  float4 uknot1 = texRECT( uknotTex2D, float2(ub+1, fid) );
+  float4 uknot2 = texRECT( uknotTex2D, float2(ub+2, fid) );
+  float4 ukd0   = texRECT( uknotTex2D, float2(ub+3, fid) );
+  float4 ukd1   = texRECT( uknotTex2D, float2(ub+4, fid) );
+  float4 ukd2   = texRECT( uknotTex2D, float2(ub+5, fid) );
+  float4 ukd3   = texRECT( uknotTex2D, float2(ub+6, fid) );
+
+  float Nu[6], dNu[6];
+  basisFuncDeriv5( u, uknot0, uknot1, uknot2,
+		   ukd0, ukd1, ukd2, ukd3,
+		   Nu, dNu );
+
+  //
+  // v direction
+  // 
+
+  // do binary search in v direction
+  float vid = binarySearch( v, fid, BSP_QUINTIC, vkvTex );
+  float iv = vid - 5;
+
+  // fetch the number of knots and knot differences 
+  //float4 va = texRECT( vknotTex2D, float2(0, fid) );
+  // fetch 6 knots and 6 knot differences in v direction
+  float  vb = 7 * iv;
+  float4 vknot0 = texRECT( vknotTex2D, float2(vb,   fid) );
+  float4 vknot1 = texRECT( vknotTex2D, float2(vb+1, fid) );
+  float4 vknot2 = texRECT( vknotTex2D, float2(vb+2, fid) );
+  float4 vkd0   = texRECT( vknotTex2D, float2(vb+3, fid) );
+  float4 vkd1   = texRECT( vknotTex2D, float2(vb+4, fid) );
+  float4 vkd2   = texRECT( vknotTex2D, float2(vb+5, fid) );
+  float4 vkd3   = texRECT( vknotTex2D, float2(vb+6, fid) );
+
+  float Nv[6], dNv[6];
+  basisFuncDeriv5( v, vknot0, vknot1, vknot2,
+		   vkd0, vkd1, vkd2, vkd3,
+		   Nv, dNv );
+
+  //
+  // fetch 36 control points
+  //
+
+  // cc.x: degree in u direction
+  // cc.y: degree in v direction
+  // cc.z: the number of control points in u direction
+  // cc.w: the number of control points in v direction
+  float4 cc = texRECT( cpTex, float2(0, fid) ); 
+
+  float4 Cp[36];
+  Cp[0]  = texRECT( cpTex, float2((iu)   * cc.w + (iv) + 1,   fid) );
+  Cp[1]  = texRECT( cpTex, float2((iu+1) * cc.w + (iv) + 1,   fid) );
+  Cp[2]  = texRECT( cpTex, float2((iu+2) * cc.w + (iv) + 1,   fid) );
+  Cp[3]  = texRECT( cpTex, float2((iu+3) * cc.w + (iv) + 1,   fid) );
+  Cp[4]  = texRECT( cpTex, float2((iu+4) * cc.w + (iv) + 1,   fid) );
+  Cp[5]  = texRECT( cpTex, float2((iu+5) * cc.w + (iv) + 1,   fid) );
+
+  Cp[6]  = texRECT( cpTex, float2((iu)   * cc.w + (iv+1) + 1, fid) );
+  Cp[7]  = texRECT( cpTex, float2((iu+1) * cc.w + (iv+1) + 1, fid) );
+  Cp[8]  = texRECT( cpTex, float2((iu+2) * cc.w + (iv+1) + 1, fid) );
+  Cp[9]  = texRECT( cpTex, float2((iu+3) * cc.w + (iv+1) + 1, fid) );
+  Cp[10] = texRECT( cpTex, float2((iu+4) * cc.w + (iv+1) + 1, fid) );
+  Cp[11] = texRECT( cpTex, float2((iu+5) * cc.w + (iv+1) + 1, fid) );
+
+  Cp[12] = texRECT( cpTex, float2((iu)   * cc.w + (iv+2) + 1, fid) );
+  Cp[13] = texRECT( cpTex, float2((iu+1) * cc.w + (iv+2) + 1, fid) );
+  Cp[14] = texRECT( cpTex, float2((iu+2) * cc.w + (iv+2) + 1, fid) );
+  Cp[15] = texRECT( cpTex, float2((iu+3) * cc.w + (iv+2) + 1, fid) );
+  Cp[16] = texRECT( cpTex, float2((iu+4) * cc.w + (iv+2) + 1, fid) );
+  Cp[17] = texRECT( cpTex, float2((iu+5) * cc.w + (iv+2) + 1, fid) );
+
+  Cp[18] = texRECT( cpTex, float2((iu)   * cc.w + (iv+3) + 1, fid) );
+  Cp[19] = texRECT( cpTex, float2((iu+1) * cc.w + (iv+3) + 1, fid) );
+  Cp[20] = texRECT( cpTex, float2((iu+2) * cc.w + (iv+3) + 1, fid) );
+  Cp[21] = texRECT( cpTex, float2((iu+3) * cc.w + (iv+3) + 1, fid) );
+  Cp[22] = texRECT( cpTex, float2((iu+4) * cc.w + (iv+3) + 1, fid) );
+  Cp[23] = texRECT( cpTex, float2((iu+5) * cc.w + (iv+3) + 1, fid) );
+
+  Cp[24] = texRECT( cpTex, float2((iu)   * cc.w + (iv+4) + 1, fid) );
+  Cp[25] = texRECT( cpTex, float2((iu+1) * cc.w + (iv+4) + 1, fid) );
+  Cp[26] = texRECT( cpTex, float2((iu+2) * cc.w + (iv+4) + 1, fid) );
+  Cp[27] = texRECT( cpTex, float2((iu+3) * cc.w + (iv+4) + 1, fid) );
+  Cp[28] = texRECT( cpTex, float2((iu+4) * cc.w + (iv+4) + 1, fid) );
+  Cp[29] = texRECT( cpTex, float2((iu+5) * cc.w + (iv+4) + 1, fid) );
+
+  Cp[30] = texRECT( cpTex, float2((iu)   * cc.w + (iv+5) + 1, fid) );
+  Cp[31] = texRECT( cpTex, float2((iu+1) * cc.w + (iv+5) + 1, fid) );
+  Cp[32] = texRECT( cpTex, float2((iu+2) * cc.w + (iv+5) + 1, fid) );
+  Cp[33] = texRECT( cpTex, float2((iu+3) * cc.w + (iv+5) + 1, fid) );
+  Cp[34] = texRECT( cpTex, float2((iu+4) * cc.w + (iv+5) + 1, fid) );
+  Cp[35] = texRECT( cpTex, float2((iu+5) * cc.w + (iv+5) + 1, fid) );
+
+//   // position
+  pt = ( Nu[0] * Nv[0] * Cp[0]  + Nu[1] * Nv[0] * Cp[1] + 
+	 Nu[2] * Nv[0] * Cp[2]  + Nu[3] * Nv[0] * Cp[3] +
+	 Nu[4] * Nv[0] * Cp[4]  + Nu[5] * Nv[0] * Cp[5] +
+	 Nu[0] * Nv[1] * Cp[6]  + Nu[1] * Nv[1] * Cp[7] + 
+	 Nu[2] * Nv[1] * Cp[8]  + Nu[3] * Nv[1] * Cp[9] +
+	 Nu[4] * Nv[1] * Cp[10] + Nu[5] * Nv[1] * Cp[11] +
+	 Nu[0] * Nv[2] * Cp[12] + Nu[1] * Nv[2] * Cp[13] + 
+	 Nu[2] * Nv[2] * Cp[14] + Nu[3] * Nv[2] * Cp[15] +
+	 Nu[4] * Nv[2] * Cp[16] + Nu[5] * Nv[2] * Cp[17] +
+	 Nu[0] * Nv[3] * Cp[18] + Nu[1] * Nv[3] * Cp[19] + 
+	 Nu[2] * Nv[3] * Cp[20] + Nu[3] * Nv[3] * Cp[21] +
+	 Nu[4] * Nv[3] * Cp[22] + Nu[5] * Nv[3] * Cp[23] +
+	 Nu[0] * Nv[4] * Cp[24] + Nu[1] * Nv[4] * Cp[25] + 
+	 Nu[2] * Nv[4] * Cp[26] + Nu[3] * Nv[4] * Cp[27] +
+	 Nu[4] * Nv[4] * Cp[28] + Nu[5] * Nv[4] * Cp[29] +
+	 Nu[0] * Nv[5] * Cp[30] + Nu[1] * Nv[5] * Cp[31] + 
+	 Nu[2] * Nv[5] * Cp[32] + Nu[3] * Nv[5] * Cp[33] +
+	 Nu[4] * Nv[5] * Cp[34] + Nu[5] * Nv[5] * Cp[35] );
+
+  // 1st derivative in u direction
+  float4 pu = ( dNu[0] * Nv[0] * Cp[0]  + dNu[1] * Nv[0] * Cp[1] + 
+		dNu[2] * Nv[0] * Cp[2]  + dNu[3] * Nv[0] * Cp[3] +
+		dNu[4] * Nv[0] * Cp[4]  + dNu[5] * Nv[0] * Cp[5] +
+		dNu[0] * Nv[1] * Cp[6]  + dNu[1] * Nv[1] * Cp[7] + 
+		dNu[2] * Nv[1] * Cp[8]  + dNu[3] * Nv[1] * Cp[9] +
+		dNu[4] * Nv[1] * Cp[10] + dNu[5] * Nv[1] * Cp[11] +
+		dNu[0] * Nv[2] * Cp[12] + dNu[1] * Nv[2] * Cp[13] + 
+		dNu[2] * Nv[2] * Cp[14] + dNu[3] * Nv[2] * Cp[15] +
+		dNu[4] * Nv[2] * Cp[16] + dNu[5] * Nv[2] * Cp[17] +
+		dNu[0] * Nv[3] * Cp[18] + dNu[1] * Nv[3] * Cp[19] + 
+		dNu[2] * Nv[3] * Cp[20] + dNu[3] * Nv[3] * Cp[21] +
+		dNu[4] * Nv[3] * Cp[22] + dNu[5] * Nv[3] * Cp[23] +
+		dNu[0] * Nv[4] * Cp[24] + dNu[1] * Nv[4] * Cp[25] + 
+		dNu[2] * Nv[4] * Cp[26] + dNu[3] * Nv[4] * Cp[27] +
+		dNu[4] * Nv[4] * Cp[28] + dNu[5] * Nv[4] * Cp[29] +
+		dNu[0] * Nv[5] * Cp[30] + dNu[1] * Nv[5] * Cp[31] + 
+		dNu[2] * Nv[5] * Cp[32] + dNu[3] * Nv[5] * Cp[33] +
+		dNu[4] * Nv[5] * Cp[34] + dNu[5] * Nv[5] * Cp[35] );
+
+  float4 pv = ( Nu[0] * dNv[0] * Cp[0]  + Nu[1] * dNv[0] * Cp[1] + 
+		Nu[2] * dNv[0] * Cp[2]  + Nu[3] * dNv[0] * Cp[3] +
+		Nu[4] * dNv[0] * Cp[4]  + Nu[5] * dNv[0] * Cp[5] +
+		Nu[0] * dNv[1] * Cp[6]  + Nu[1] * dNv[1] * Cp[7] + 
+		Nu[2] * dNv[1] * Cp[8]  + Nu[3] * dNv[1] * Cp[9] +
+		Nu[4] * dNv[1] * Cp[10] + Nu[5] * dNv[1] * Cp[11] +
+		Nu[0] * dNv[2] * Cp[12] + Nu[1] * dNv[2] * Cp[13] + 
+		Nu[2] * dNv[2] * Cp[14] + Nu[3] * dNv[2] * Cp[15] +
+		Nu[4] * dNv[2] * Cp[16] + Nu[5] * dNv[2] * Cp[17] +
+		Nu[0] * dNv[3] * Cp[18] + Nu[1] * dNv[3] * Cp[19] + 
+		Nu[2] * dNv[3] * Cp[20] + Nu[3] * dNv[3] * Cp[21] +
+		Nu[4] * dNv[3] * Cp[22] + Nu[5] * dNv[3] * Cp[23] +
+		Nu[0] * dNv[4] * Cp[24] + Nu[1] * dNv[4] * Cp[25] + 
+		Nu[2] * dNv[4] * Cp[26] + Nu[3] * dNv[4] * Cp[27] +
+		Nu[4] * dNv[4] * Cp[28] + Nu[5] * dNv[4] * Cp[29] +
+		Nu[0] * dNv[5] * Cp[30] + Nu[1] * dNv[5] * Cp[31] + 
+		Nu[2] * dNv[5] * Cp[32] + Nu[3] * dNv[5] * Cp[33] +
+		Nu[4] * dNv[5] * Cp[34] + Nu[5] * dNv[5] * Cp[35] );
+
+  nm = float4( normalize( cross( pu.xyz, pv.xyz ) ), 1.0f );
+}
+  
+  
+
+
+

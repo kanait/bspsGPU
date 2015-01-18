@@ -1,0 +1,19 @@
+////////////////////////////////////////////////////////////////////
+//
+// $Id: $
+//
+// Copyright (c) 2005 by Takashi Kanai. All rights reserved. 
+//
+////////////////////////////////////////////////////////////////////
+
+void main(in float4 pos   : POSITION,
+          in float4 nrm   : NORMAL,
+          uniform float4x4 ModelViewProj,
+          out float4 hpos : POSITION,
+   	  out float4 ppos : TEXCOORD1,
+	  out float4 pnrm : TEXCOORD2 )
+{
+  hpos = mul( ModelViewProj, pos );
+  ppos = pos;
+  pnrm = nrm;
+}

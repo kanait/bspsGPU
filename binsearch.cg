@@ -1,0 +1,56 @@
+////////////////////////////////////////////////////////////////////
+//
+// $Header$
+//
+// Non-Uniform B-Spline Surface fragment program
+//
+// Copyright (c) 2004-2005 by Keio Research Institute at SFC
+// All rights reserved. 
+//
+////////////////////////////////////////////////////////////////////
+
+#ifndef _BINSEARCH_CG
+#define _BINSEARCH_CG 1
+
+// #define LOGN 5 // valid if n_kt < 32 (2^{5})
+#define LOGN 6 // valid if n_kt < 64 (2^{6})
+
+//
+// finding a knot span i for a parameter t ( t_{i} <= t < t_{i+1} )
+// by a binary search algorithm
+//
+int binarySearch( float t,
+		  float fid,
+		  float deg,
+		  uniform samplerRECT sortlist )
+{
+  // fetch the number of knot vector
+  float4 a  = texRECT( sortlist, float2(0, fid) );
+  float m = a.y - 1;
+
+  float t0  = f1texRECT( sortlist, float2(m - deg, fid) );
+  int flag = 0;
+  if ( abs(t-t0) < 1.0e-05 ) flag = 1;
+
+  int low = deg;
+  int high = m - deg;
+  
+  int mid = (low+high)/2;
+  for ( int i = 0; i < LOGN; i++ )
+    {
+      float ts = f1texRECT( sortlist, float2(mid,  fid) );
+      float te = f1texRECT( sortlist, float2(mid+1,fid) );
+      if ( t < ts || t >= te )
+	{
+	  if ( t < ts ) high = mid;
+	  else low = mid;
+	  mid = (low+high)/2;
+	}
+    }
+
+  if ( flag == 1 ) mid = m - (deg+1);
+
+  return mid;
+}
+
+#endif // _BINSEARCH_CG

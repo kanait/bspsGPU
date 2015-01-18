@@ -1,0 +1,27 @@
+////////////////////////////////////////////////////////////////////
+//
+// $Id: $
+//
+// Copyright (c) 2006 by Takashi Kanai. All rights reserved. 
+//
+////////////////////////////////////////////////////////////////////
+
+void main( float4 HPOS : POSITION,
+	   float4 pos  : TEXCOORD1,
+	   float4 nrm  : TEXCOORD2,
+	   uniform float3 lightPos,
+	   out float4 color : COLOR0  )
+{
+  float3 lv = lightPos - pos.xyz;
+  float3 lvn = normalize( lv );
+  float3 nrm3 = nrm.xyz;
+  
+  float d = dot( nrm3, lvn ) * 10.0;
+
+  color = float4(.0f, .0f, .0f, 1.0f );
+
+  if ( (int) fmod( d, 2 ) == 0 ) 
+    color += float4( .1f, .1f, .1f, 1.0f );
+  else
+    color += float4( .9f, .9f, .9f, 1.0f );
+}

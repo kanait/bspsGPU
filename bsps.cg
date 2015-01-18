@@ -1,0 +1,133 @@
+////////////////////////////////////////////////////////////////////
+//
+// $Id: bsps.cg,v 1.6 2005/01/05 14:07:53 kanai Exp $
+//
+// Non-Uniform B-Spline Surface fragment program
+//
+// Copyright (c) 2004-2005 by Keio Research Institute at SFC
+// All rights reserved. 
+//
+////////////////////////////////////////////////////////////////////
+
+#include "mydefine.h"
+
+#include "binsearch.cg"
+#include "bsps3.cg"
+#include "bsps5.cg"
+
+void main( float4 HPOS : POSITION,
+           float3 Access : TEXCOORD0,
+	   uniform float3 eyePos,
+	   uniform float3 lightPos,
+  	   uniform float3 ambientColor,
+  	   uniform float3 diffuseColor,
+  	   uniform float3 specularColor,
+  	   uniform float  specularShininess,
+	   uniform float drawMode,
+	   uniform samplerRECT ukvTex,
+	   uniform samplerRECT uknotTex2D,
+	   uniform samplerRECT vkvTex,
+	   uniform samplerRECT vknotTex2D,
+	   uniform samplerRECT cpTex,
+           uniform sampler2D lightTex,
+           uniform float4x4 ModelViewProj,
+           uniform float4x4 ModelViewIT,
+	   out float4 color : COLOR0  )
+{
+  // a two-dimensional parameter + b-spline face id
+  float u = Access.x;
+  float v = Access.y;
+  float fid = round(Access.z * FID_DIV);
+
+  float4 cc = texRECT( cpTex, float2(0, fid) ); 
+  
+  // evaluate a point and a normal vector
+  float4 pos;
+  float4 nrm;
+
+  if ( cc.x == BSP_CUBIC )
+    {
+      eval3( u,v, fid, ukvTex, uknotTex2D, vkvTex, vknotTex2D, cpTex, pos, nrm );
+    }
+  else if ( cc.x == BSP_QUINTIC )
+    {
+//       eval5( u,v, fid, ukvTex, uknotTex2D, vkvTex, vknotTex2D, cpTex, pos, nrm );
+    }
+
+  color = float4(.0f, .0f, .0f, 1.0f );
+
+#if 0
+  // 
+  // 反射線の計算
+  // 
+  float3 wpos = mul(ModelViewProj, pos).xyz;
+  float3 wnrm = normalize( mul(ModelViewIT, nrm).xyz );
+
+  // 1. 視点から点へのベクトルの反射ベクトルを求める
+  //    (オブジェクト座標により計算)
+  float3 PosEye = wpos - eyePos;
+  float3 WRef = reflect( PosEye, wnrm );
+
+  if(dot(wnrm, float3(0.0, 1.0, 0.0)) < 0.0 || 
+     dot(wnrm, float3(0.0, 0.0, 1.0)) < 0.0 || 
+     dot(WRef, float3(0.0, 1.0, 0.0)) < 0.0)
+    WRef.y = 0.0;
+
+  // 2. 反射ベクトルと点からなる直線と，平面 z=Z の交点を求める
+  float val = (1.0f - wpos.z) / WRef.z;
+  float2 uv = wpos.xy + WRef.xy * val;
+
+  // 2.' uv の値を [0, 1] に正規化(-10.0-10.0で定義される光源を想定)
+  uv = (uv - (-10.0)) * 0.05; // / 20.0
+       
+  // 3. 交点をテクスチャ座標としてテクスチャをルックアップする
+  color += 2.0 * f4tex2D( lightTex, uv );
+
+#endif
+
+  if ( drawMode == DISPLAY_FRAGGPU )
+    {
+  
+      //
+      // Shading
+      //
+
+      float3 nrm3 = nrm.xyz;
+      float3 lp = normalize( lightPos );
+      // calculate half angle vector
+      float3 halfVec = normalize(lp + eyePos);
+
+      // calculate diffuse component
+      float3 diffuse = max( dot(nrm3, lp), 0.0 ) * diffuseColor;
+
+      // calculate specular component
+      //   float3 specularMaterial = float3(0.8, 0.8, 0.8);
+      float3 specular = float3( max(dot(nrm3, halfVec), 0.0));
+      specular = pow(specular.x, specularShininess) * specularColor;
+    
+      // calculate ambient component
+      //   float3 ambient = float3( .2, .2, .2 );
+
+      // combine diffuse and specular contributions and output final vertex color
+      color.xyz += (ambientColor + diffuse + specular);
+      //color.w   += 1.0;
+
+    }
+  else if ( drawMode == DISPLAY_GPUISO )
+    {
+      //
+      // Isophoto
+      //
+      float3 lv = lightPos - pos.xyz;
+      float3 lvn = normalize( lv );
+      float3 nrm3 = nrm.xyz;
+  
+      float d = dot( nrm3, lvn ) * 10.0;
+
+      if ( (int) fmod( d, 2 ) == 0 ) 
+	color += float4( .1f, .1f, .1f, 1.0f );
+      else
+	color += float4( .9f, .9f, .9f, 1.0f );
+    }
+
+}
