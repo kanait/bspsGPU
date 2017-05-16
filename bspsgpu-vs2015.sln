@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bspsgpu", "bspsgpu.vcxproj", "{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6543E4DC-0552-4F61-9420-A8268AFF8A9A} = {6543E4DC-0552-4F61-9420-A8268AFF8A9A}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "render", "..\..\megapoly\megapoly\VC\render\render.vcxproj", "{6543E4DC-0552-4F61-9420-A8268AFF8A9A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}.Debug|Win32.ActiveCfg = Debug|Win32
+		{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}.Debug|Win32.Build.0 = Debug|Win32
+		{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}.Release|Win32.ActiveCfg = Release|Win32
+		{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}.Release|Win32.Build.0 = Release|Win32
+		{6543E4DC-0552-4F61-9420-A8268AFF8A9A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6543E4DC-0552-4F61-9420-A8268AFF8A9A}.Debug|Win32.Build.0 = Debug|Win32
+		{6543E4DC-0552-4F61-9420-A8268AFF8A9A}.Release|Win32.ActiveCfg = Release|Win32
+		{6543E4DC-0552-4F61-9420-A8268AFF8A9A}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
