@@ -83,8 +83,7 @@
       <AdditionalDependencies>glew32.lib;cg.lib;cgGL.lib;libpng16.lib;zlib.lib;opennurbs_static.lib;glut32.lib;glu32.lib;opengl32.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>bspsgpu.exe</OutputFile>
       <AdditionalLibraryDirectories>..\lib\Cg\lib;..\opennurbs\ReleaseStaticLib;..\lib\glew-1.7.0\lib;..\lib\lpng1637-vs2019\projects\vstudio\Release Library;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <IgnoreSpecificDefaultLibraries>
-      </IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>LIBCMT.lib</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
