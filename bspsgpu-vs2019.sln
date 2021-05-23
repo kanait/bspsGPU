@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31229.75
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bspsgpu", "bspsgpu.vcxproj", "{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}.Debug|Win32.ActiveCfg = Debug|Win32
+		{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}.Debug|Win32.Build.0 = Debug|Win32
+		{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}.Release|Win32.ActiveCfg = Release|Win32
+		{61E69543-3EF3-4AE4-AC7E-E45C8C955D39}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4978D2F5-FC7A-4D17-AC74-D4D6A62BBB62}
+	EndGlobalSection
+EndGlobal

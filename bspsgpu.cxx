@@ -903,9 +903,9 @@ void keyboard( unsigned char c, int x, int y )
     case 'p':
 
       // screen capture
-      pane.setRecordPNG( true );
+      //pane.setRecordPNG( true );
       //pane.setIsCaptureDepth( true );
-      pane.setPNGFile( "save_screen.png" );
+      //pane.setPNGFile( "save_screen.png" );
       
       break;
       
