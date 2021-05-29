@@ -34,6 +34,14 @@ Our code uses Cg Toolkit library from nVIDIA. The latest version (Cg 3.1 release
 
 ### glut (included in Cg Toolkit library)
 
+### [vecmath-cpp](https://github.com/yuki12/vecmath-cpp)
+
+When you execute "git clone" with "--recursive" option, you will also get vecmath-cpp library as a submodule "external/vecmath-cpp":
+
+```
+git clone git@github.com:kanait/bspsgpu.git --recursive
+```
+
 ## Authors
 
 * **[Takashi Kanai](https://graphics.c.u-tokyo.ac.jp/hp/en/)** - The University of Tokyo
