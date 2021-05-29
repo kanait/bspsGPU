@@ -9,6 +9,9 @@ This software was originally developed in 2004-2007 and was renovated in 2021 so
 ## Getting Started
 
 This software can run only on Windows. 
+At first, you may try to use binary release (Win32, x64), 
+which is available from [here](https://github.com/kanait/bspsgpu/releases/tag/v1.0).
+Uncompress zip file and then execute run_surface.bat or run_spray.bat.
 
 ## Prerequisites
 
@@ -16,7 +19,12 @@ The following libraries are at least required for successfully compiling this so
 
 ### [openNURBS](https://www.rhino3d.com/opennurbs/)
 
+Our code uses openNURBS library. Currently, only version 3 is supported.
+You may compile our code by using other versions (including the latest version). In this case, however, several code modifications are needed.
+
 ### [Cg Toolkit](https://developer.nvidia.com/cg-toolkit/)
+
+Our code uses Cg Toolkit library from nVIDIA. The latest version (Cg 3.1 release) is supported.
 
 ### [zlib](https://zlib.net/)
 
@@ -24,7 +32,7 @@ The following libraries are at least required for successfully compiling this so
 
 ### [glew](http://glew.sourceforge.net/)
 
-### glut
+### glut (included in Cg Toolkit library)
 
 ## Authors
 
