@@ -1,0 +1,3 @@
+[submodule "external/vecmath-cpp"]
+	path = external/vecmath-cpp
+	url = https://github.com/yuki12/vecmath-cpp.git
