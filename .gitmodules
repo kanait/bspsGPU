@@ -1,3 +1,6 @@
 [submodule "external/vecmath-cpp"]
 	path = external/vecmath-cpp
 	url = https://github.com/yuki12/vecmath-cpp.git
+[submodule "external/render"]
+	path = external/render
+	url = https://github.com/kanait/render.git
