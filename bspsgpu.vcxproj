@@ -166,6 +166,7 @@
     <ClCompile Include="bspsgpu.cxx" />
     <ClCompile Include="BSPSIO.cxx" />
     <ClCompile Include="DM3IO.cxx" />
+    <ClCompile Include="GLMeshVBO.cxx" />
     <ClCompile Include="POLIO.cxx" />
   </ItemGroup>
   <ItemGroup>
@@ -174,6 +175,7 @@
     <ClInclude Include="BSPSTexGPU.hxx" />
     <ClInclude Include="DM3IO.hxx" />
     <ClInclude Include="GLBSPS.hxx" />
+    <ClInclude Include="GLMeshVBO.hxx" />
     <ClInclude Include="MeshRApp.hxx" />
     <ClInclude Include="POLIO.hxx" />
   </ItemGroup>
