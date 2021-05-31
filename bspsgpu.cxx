@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////
 //
-// $Id: bspsgpu.cxx,v 1.10 2005/01/05 14:07:53 kanai Exp $
+// $Id: bspsgpu.cxx 2021/06/01 01:50:09 kanai Exp $
 //
 // Copyright (c) 2004-2005 by Keio Research Institute at SFC
 // All rights reserved. 
@@ -19,7 +19,7 @@
 
 #include "mydef.h"
 //#include "timer.hxx"
-#include "nvtimer.h"
+//#include "nvtimer.h"
 
 #include <vector>
 #include <list>
@@ -87,22 +87,25 @@ static float myMatl[] = {
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-// int width = 1024;
-// int height = 1024;
-int width = 512;
-int height = 512;
+int width = 1024;
+int height = 1024;
+// int width = 512;
+// int height = 512;
 
 GLPanel pane;
 GLMaterial mtl;
 
 #include "mydefine.h"
 
-unsigned short fGPUflag = DISPLAY_POLYGON;
+unsigned short fGPUflag = DISPLAY_FRAGGPU;
+//unsigned short fGPUflag = DISPLAY_POLYGON;
 bool wfflag = false;
 bool pwfflag = false;
 
-timer fps(10);
-char buf[BUFSIZ];
+#include "c11timer.hxx"
+C11Timer c11fps;
+double max_c11fps = 0.0;
+
 char typebuf[BUFSIZ];
 char txt[BUFSIZ];
 
@@ -780,12 +783,14 @@ void display()
 
   ::glutSwapBuffers();
 
-  fps.frame();
-  if ( fps.timing_updated() )
-    sprintf( buf,"%.3f fps", fps.get_fps() );
+  // fps.frame();
+  // if ( fps.timing_updated() )
+  //   sprintf( buf,"%.3f fps", fps.get_fps() );
+  double f = c11fps.CheckGetFPS();
+  if ( max_c11fps < f ) max_c11fps = f;
 
-  sprintf( txt, "B-spline Surfaces on GPU - %s - %s", typebuf, buf );
-  ::glutSetWindowTitle( txt );  
+  sprintf( txt, "B-spline Surfaces on GPU - %s - %.3f fps", typebuf, max_c11fps );
+  ::glutSetWindowTitle( txt );
 
   ::glutReportErrors();
 
@@ -854,6 +859,7 @@ void keyboard( unsigned char c, int x, int y )
 
       fGPUflag = DISPLAY_POLYGON;
       sprintf( typebuf,"Polygon Shading" );
+      max_c11fps = 0.0;
 
       break;
 
@@ -861,6 +867,7 @@ void keyboard( unsigned char c, int x, int y )
 
       fGPUflag = DISPLAY_ISOPHOTO;
       sprintf( typebuf,"Polygon Isophotos" );
+      max_c11fps = 0.0;
 
       break;
 
@@ -868,6 +875,7 @@ void keyboard( unsigned char c, int x, int y )
 
       fGPUflag = DISPLAY_FRAGGPU;
       sprintf( typebuf,"GPU Shading" );
+      max_c11fps = 0.0;
 
       break;
 
@@ -875,6 +883,7 @@ void keyboard( unsigned char c, int x, int y )
 
       fGPUflag = DISPLAY_GPUISO;
       sprintf( typebuf,"GPU Isophotos" );
+      max_c11fps = 0.0;
 
       break;
 
@@ -1020,7 +1029,9 @@ int main( int argc, char **argv )
   pane.setIsGradientBackground( false );
   pane.setLightParameters( 0, myLight );
 
-  sprintf( typebuf,"Polygon Shading" );
+  // Initialize display mode
+  fGPUflag = DISPLAY_FRAGGPU;
+  sprintf( typebuf, "GPU Shading" );
 
   glmeshvbo.setMesh( mesh );
   glmeshvbo.setIsSmoothShading( true );
