@@ -1,6 +1,6 @@
-# bspsgpu
+# bspsGPU
 
-bspsgpu is a research code for evaluating non-uniform B-spline surfaces on GPUs, which includes an implementation of the following paper:
+bspsGPU is a research-purpose software for evaluating non-uniform B-spline surfaces on GPUs, which includes an implementation of the following paper:
 
 Takashi Kanai: “Fragment-based Evaluation of Non-Uniform B-spline Surfaces on GPUs”, Computer-Aided Design and Applications (Proc. CAD’07 Conference, Honolulu, Hawaii, 25-29 June, 2007), Vol.4, Nos.1-4, pp.287-294, 2007.
 
@@ -10,7 +10,7 @@ This software was originally developed in 2004-2007 and was renovated in 2021 so
 
 This software can run only on Windows. 
 At first, you may try to use binary release (Win32, x64), 
-which is available from [here](https://github.com/kanait/bspsgpu/releases/tag/v1.0).
+which is available from [here](https://github.com/kanait/bspsGPU/releases/tag/v1.0).
 Uncompress zip file and then execute run_surface.bat or run_spray.bat.
 
 ## Prerequisites
@@ -40,7 +40,7 @@ Our code uses Cg Toolkit library from nVIDIA. The latest version (Cg 3.1 release
 When you execute "git clone" with "--recursive" option, you will also get vecmath-cpp and render libraries as a submodule "external/vecmath-cpp" and "external/render":
 
 ```
-git clone https://github.com/kanait/bspsgpu.git --recursive
+git clone https://github.com/kanait/bspsGPU.git --recursive
 ```
 
 ## Authors
