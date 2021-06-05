@@ -40,7 +40,7 @@ Our code uses Cg Toolkit library from nVIDIA. The latest version (Cg 3.1 release
 When you execute "git clone" with "--recursive" option, you will also get vecmath-cpp and render libraries as a submodule "external/vecmath-cpp" and "external/render":
 
 ```
-git clone git@github.com:kanait/bspsgpu.git --recursive
+git clone https://github.com/kanait/bspsgpu.git --recursive
 ```
 
 ## Authors
