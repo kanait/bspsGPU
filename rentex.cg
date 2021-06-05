@@ -1,3 +1,12 @@
+////////////////////////////////////////////////////////////////////
+//
+// $Id: rentex.cg 2021/06/05 12:20:42 kanai Exp $
+//
+// Copyright (c) 2021 Takashi Kanai
+// Released under the MIT license
+//
+////////////////////////////////////////////////////////////////////
+
 float4 main( float2 wpos : WPOS,
 	     uniform samplerRECT pbuffer ) : COLOR
 {

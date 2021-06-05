@@ -1,11 +1,9 @@
 ////////////////////////////////////////////////////////////////////
 //
-// $Id: bsps.cg,v 1.6 2005/01/05 14:07:53 kanai Exp $
+// $Id: bsps5.cg 2021/06/05 12:11:35 kanai Exp $
 //
-// Non-Uniform B-Spline Surface fragment program
-//
-// Copyright (c) 2004-2005 by Keio Research Institute at SFC
-// All rights reserved. 
+// Copyright (c) 2021 Takashi Kanai
+// Released under the MIT license
 //
 ////////////////////////////////////////////////////////////////////
 

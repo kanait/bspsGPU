@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////
 //
-// $Id: bspsgpu.cxx 2021/06/01 01:50:09 kanai Exp $
+// $Id: bspsgpu.cxx 2021/06/05 12:09:33 kanai Exp $
 //
-// Copyright (c) 2004-2005 by Keio Research Institute at SFC
-// All rights reserved. 
+// Copyright (c) 2021 Takashi Kanai
+// Released under the MIT license
 //
 ////////////////////////////////////////////////////////////////////
 

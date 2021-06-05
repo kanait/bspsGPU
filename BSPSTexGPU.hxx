@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////
 //
-// $Id: BSPS3TexGPU.hxx,v 1.5 2005/01/04 04:18:07 kanai Exp $
+// $Id: BSPSTexGPU.hxx 2021/06/05 12:17:48 kanai Exp $
 //
-// Copyright (c) 2004-2005 by Keio Research Institute at SFC
-// All rights reserved. 
+// Copyright (c) 2021 Takashi Kanai
+// Released under the MIT license
 //
 ////////////////////////////////////////////////////////////////////
 

@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////
 //
-// $Id: BSPSIO.hxx,v 1.3 2005/01/05 14:07:53 kanai Exp $
+// $Id: BSPSIO.hxx 2021/06/05 12:17:05 kanai Exp $
 //
-// Copyright (c) 2004-2005 by Keio Research Institute at SFC
-// All rights reserved. 
+// Copyright (c) 2021 Takashi Kanai
+// Released under the MIT license
 //
 ////////////////////////////////////////////////////////////////////
 
