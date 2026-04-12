@@ -23,6 +23,7 @@
 //#include "timer.hxx"
 //#include "nvtimer.h"
 
+#include <cstdio>
 #include <iostream>
 #include <vector>
 #include <list>
@@ -856,7 +857,7 @@ void display()
   double f = c11fps.CheckGetFPS();
   if ( max_c11fps < f ) max_c11fps = f;
 
-  sprintf( txt, "B-spline Surfaces on GPU - %s - %.3f fps", typebuf, max_c11fps );
+  std::snprintf( txt, sizeof( txt ), "B-spline Surfaces on GPU - %s - %.3f fps", typebuf, max_c11fps );
   ::glutSetWindowTitle( txt );
 
   ::glutReportErrors();
@@ -1075,7 +1076,7 @@ int main( int argc, char **argv )
     }
 #endif
 
-  /* freeglut requires glutInit() before glutInitWindowSize(); Apple GLUT tolerated the reverse. */
+  /* GLUT: call glutInit() before glutInitWindowSize() (required by freeglut; harmless for Apple GLUT). */
   ::glutInit( &argc, argv );
   ::glutInitWindowSize( width, height );
   //::glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGBA | GLUT_ALPHA | GLUT_DEPTH | GLUT_STENCIL );

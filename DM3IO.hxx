@@ -24,6 +24,7 @@ using namespace kh_vecmath;
 
 #include "opennurbs.h"
 #include "opennurbs_extensions.h"
+#include "opennurbs_model_geometry.h"
 
 class DM3IO {
 
@@ -47,93 +48,8 @@ public:
   };
   void normalizeCp( std::vector<BSPS>&, Point3f&, float* );
   
-  void getSurfaceParameters( std::vector<Point3f>& cp, 
-			     std::vector<float>& ukv, std::vector<float>& vkv )
-  {
-    int c = 0;
-    
-    for ( int i = 0; i < model_->m_object_table.Count(); i++ )
-      {
-	if ( model_->m_object_table[i].m_object->ObjectType() == ON::brep_object )
-	  {
-// 	    int si;
-	    const ON_Brep* obj =  (ON_Brep*) model_->m_object_table[i].m_object;
-	    for ( int si = 0; si < obj->m_S.Count(); si++ )
-	      {
-		const ON_Surface* srf = obj->m_S[si];
-		if ( srf )
-		  {
-		    if ( strcmp( srf->ClassId()->ClassName(), "ON_NurbsSurface") )
-		      {
-			cerr << "surface " << i << " " << si << " is not ON_NurbsSurface. " << endl;
-		      }
-		    const char* s = srf->ClassId()->ClassName();
-
-		    const ON_NurbsSurface* nbs = (ON_NurbsSurface*) srf;
-		    cout << "ON_NurbsSurface dim = " << nbs->m_dim << " is_rat = " 
-			 << nbs->m_is_rat << " order = " 
-			 << nbs->m_order[0] << " X " << nbs->m_order[1] << " cv_count = " 
-			 << nbs->m_cv_count[0] << " X " << nbs->m_cv_count[1]  << endl;
-
-		    // degree
-
-		    // Knot ‚Í knot vector ‚ÌŒ`‚ÅŠi”[‚³‚ê‚Ä‚¢‚é
-		    cout << "Knots count =" << nbs->KnotCount(0) << " X " << nbs->KnotCount(1) 
-			 << endl;
-
-		    double* knot = nbs->m_knot[0];
-		    cout << "U dir" << endl;
-
-		    // m+1 ŒÂ‚ÌƒmƒbƒgƒxƒNƒgƒ‹‚ðŠi”[
-		    ukv.push_back( knot[0] );
-		    for ( int i  = 0; i < nbs->KnotCount(0); ++i )
-		      {
-			ukv.push_back( knot[i] );
-			//cout << i << " " << knot[i] << endl;
-		      }
-		    ukv.push_back( knot[nbs->KnotCount(0)-1] );
-		    for ( int i  = 0; i < ukv.size(); ++i )
-		      cout << i << " " << ukv[i] << endl;
-
-		    knot = nbs->m_knot[1];
-		    cout << "V dir" << endl;
-		     
-		    // m+1 ŒÂ‚ÌƒmƒbƒgƒxƒNƒgƒ‹‚ðŠi”[
-		    vkv.push_back( knot[0] );
-		    for ( int i  = 0; i < nbs->KnotCount(1); ++i )
-		      {
-			vkv.push_back( knot[i] );
-			//cout << i << " " << knot[i] << endl;
-		      }
-		    vkv.push_back( knot[nbs->KnotCount(1)-1] );
-
-		    for ( int i  = 0; i < vkv.size(); ++i )
-		      cout << i << " " << vkv[i] << endl;
-
-		    //
-		    // §Œä“_‚ÌŠi”[
-		    //
-		
-		    n_ucp_ = nbs->m_cv_count[0];
-		    n_vcp_ = nbs->m_cv_count[1];
-
-		    for ( int i = 0; i < nbs->m_cv_count[0]; ++i )
-		      {
-			for ( int j = 0; j < nbs->m_cv_count[1]; ++j )
-			  {
-			    double* cv = nbs->CV( i, j );
-			    Point3f p( cv[0], cv[1], cv[2] );
-			    cp.push_back( p );
-			    cout << i << " " << j << " " << p << endl;
-			  }
-		      }
-		    
-		  }
-
-	      }
-	  }
-      }
-  };
+  void getSurfaceParameters( std::vector<Point3f>& cp,
+			     std::vector<float>& ukv, std::vector<float>& vkv );
 
   void normalizeCp( std::vector<Point3f>& cp )
   {
@@ -184,5 +100,5 @@ private:
   
 };
 
-#endif // 
+#endif // _DM3IO_HXX
 

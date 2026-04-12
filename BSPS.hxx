@@ -61,7 +61,7 @@ public:
   void setNUcp( int n ) { n_ucp_ = n; };
   void setNVcp( int n ) { n_vcp_ = n; };
 
-  void addCp( Point4f& p ) { cp_.push_back( p ); };
+  void addCp( const Point4f& p ) { cp_.push_back( p ); };
   std::vector<Point4f>& cp() { return cp_; };
 
   int findSpan( float t, int m, int deg, std::vector<float>& kv ) {
