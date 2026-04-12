@@ -27,7 +27,7 @@ using namespace kh_vecmath;
 // #include "TexcoordL.hxx"
 
 //
-// the same one is defined on bsps.cg
+// the same values are defined in shaders/bsps.frag.glsl
 //
 
 #include "mydefine.h"
