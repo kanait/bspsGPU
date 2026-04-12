@@ -65,9 +65,7 @@ An older **Win32/x64** zip release (Cg-era) is still available for reference:
 
 ### Updating the OpenNURBS submodule
 
-After `git submodule update --remote external/opennurbs`, run a full rebuild. If you maintain **local changes** inside `external/opennurbs` (for example Linux link or CMake tweaks), reconcile them with upstream before committing the updated submodule pointer.
-
-**Publishing:** This tree may record an OpenNURBS commit that is **not** on `github.com/mcneel/opennurbs` (local commits on top of upstream). For `git clone --recursive` to work for others, push that revision to a fork (or branch you control) and set the `external/opennurbs` URL in `.gitmodules` to that remote, then commit the URL change.
+After `git submodule update --remote external/opennurbs`, run a full rebuild. Keep **upstream OpenNURBS unmodified**; platform glue (for example bundled zlib C symbols on Linux/GNU ld, and CMake deprecation noise from nested `cmake_minimum_required`) lives in this repository (`opennurbs_zlib_alloc_glue.cxx`, `CMakeLists.txt` around `add_subdirectory`).
 
 ## Authors
 

@@ -9,7 +9,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # --- OpenNURBS (zlib is resolved inside external/opennurbs/CMakeLists.txt) ---
-add_subdirectory(external/opennurbs)
+# Upstream android_uuid still declares cmake_minimum_required(3.4); silence the
+# parent deprecation warning without patching the submodule.
+set( _bspsgpu_warn_deprecated "${CMAKE_WARN_DEPRECATED}" )
+set( CMAKE_WARN_DEPRECATED OFF )
+add_subdirectory( external/opennurbs )
+set( CMAKE_WARN_DEPRECATED "${_bspsgpu_warn_deprecated}" )
 
 # --- Dependencies for the viewer / I/O ---
 find_package(OpenGL REQUIRED)
@@ -93,6 +98,7 @@ add_executable( bspsgpu
   BSPSIO.cxx
   DM3IO.cxx
   POLIO.cxx
+  opennurbs_zlib_alloc_glue.cxx
 )
 
 target_sources( bspsgpu PRIVATE "${_bspsgpu_embedded_h}" )
