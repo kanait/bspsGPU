@@ -10,17 +10,20 @@
 #include "envDep.h"
 
 #include "GL/glew.h"
+#if defined( _WIN32 )
 #include "GL/wglew.h"
+#endif
 
 #include <GL/glut.h>
 
-#include <Cg/cg.h>
-#include <Cg/cgGL.h>
+#include "GLShader.hxx"
+#include "bspsgpu_embedded_shaders.h"
 
 #include "mydef.h"
 //#include "timer.hxx"
 //#include "nvtimer.h"
 
+#include <iostream>
 #include <vector>
 #include <list>
 using namespace std;
@@ -127,22 +130,45 @@ GLenum texFormat0 = GL_RGBA;
 GLenum texType0 = GL_FLOAT;
 #endif
 
-CGcontext context;
+// GLSL programs (replaces NVIDIA Cg)
+static GLuint s_progBsps = 0;
+static GLuint s_progIsophoto = 0;
 
-CGprofile vertProfile;
-CGprofile fragProfile;
-CGprogram bspsProgram;
-CGprogram isovProgram;
-CGprogram isofProgram;
+static GLuint s_texUKnotVec = 0;
+static GLuint s_texUKnotTex = 0;
+static GLuint s_texVKnotVec = 0;
+static GLuint s_texVKnotTex = 0;
+static GLuint s_texCp = 0;
+static GLuint s_texLight = 0;
 
-#ifdef USE_VBO
-CGprogram vertProgram;
-CGprofile vertProfile;
-#endif
+struct BspsUniformLocs
+{
+  GLint eyePos;
+  GLint lightPos;
+  GLint ambientColor;
+  GLint diffuseColor;
+  GLint specularColor;
+  GLint specularShininess;
+  GLint drawMode;
+  GLint ukvTex;
+  GLint uknotTex2D;
+  GLint vkvTex;
+  GLint vknotTex2D;
+  GLint cpTex;
+  GLint lightTex;
+};
+
+static BspsUniformLocs s_uBsps;
+
+struct IsoUniformLocs
+{
+  GLint lightPos;
+};
+
+static IsoUniformLocs s_uIso;
 
 #ifdef RENDER_TO_TEXTURE
 GLuint position;
-CGprogram rentexProgram;
 #endif
 
 #ifdef USE_VBO
@@ -182,200 +208,180 @@ void checkGLErrors(char *s)
   }
 }
 
-static void handleCgError() 
+static void cacheBspsUniforms()
 {
-  fprintf(stderr, "Cg error: %s\n", cgGetErrorString(cgGetError()));
+  GLuint p = s_progBsps;
+  s_uBsps.eyePos = glGetUniformLocation( p, "eyePos" );
+  s_uBsps.lightPos = glGetUniformLocation( p, "lightPos" );
+  s_uBsps.ambientColor = glGetUniformLocation( p, "ambientColor" );
+  s_uBsps.diffuseColor = glGetUniformLocation( p, "diffuseColor" );
+  s_uBsps.specularColor = glGetUniformLocation( p, "specularColor" );
+  s_uBsps.specularShininess = glGetUniformLocation( p, "specularShininess" );
+  s_uBsps.drawMode = glGetUniformLocation( p, "drawMode" );
+  s_uBsps.ukvTex = glGetUniformLocation( p, "ukvTex" );
+  s_uBsps.uknotTex2D = glGetUniformLocation( p, "uknotTex2D" );
+  s_uBsps.vkvTex = glGetUniformLocation( p, "vkvTex" );
+  s_uBsps.vknotTex2D = glGetUniformLocation( p, "vknotTex2D" );
+  s_uBsps.cpTex = glGetUniformLocation( p, "cpTex" );
+  s_uBsps.lightTex = glGetUniformLocation( p, "lightTex" );
 }
 
-void initCg()
+static void cacheIsoUniforms()
 {
-  cgSetErrorCallback( handleCgError );
-  context = cgCreateContext();
-
-  // fragment program (1st-pass)
-  fragProfile = cgGLGetLatestProfile( CG_GL_FRAGMENT );
-
-  bspsProgram = cgCreateProgramFromFile( context, CG_SOURCE, "bsps.cg",
-					 fragProfile, NULL, NULL );
-  cgGLLoadProgram( bspsProgram );
-
-  
-  vertProfile = cgGLGetLatestProfile( CG_GL_VERTEX );
-
-  // isoPhoto program for polygons
-  isovProgram = cgCreateProgramFromFile( context, CG_SOURCE, "isophoto_vp.cg",
-					 vertProfile, NULL, NULL );
-
-  cgGLLoadProgram( isovProgram );
-
-  isofProgram = cgCreateProgramFromFile( context, CG_SOURCE, "isophoto_fp.cg",
-					 fragProfile, NULL, NULL );
-  cgGLLoadProgram( isofProgram );
-  
-
-#ifdef USE_VBO
-  // vertex program (2nd-pass)
-  vertProfile = cgGLGetLatestProfile( CG_GL_VERTEX );
-  vertProgram  = cgCreateProgramFromFile( context, CG_SOURCE, "vertex.cg",
- 					  vertProfile, NULL, NULL );
-  cgGLLoadProgram( vertProgram );
-#endif
-
-#ifdef RENDER_TO_TEXTURE
-  // fragment program (2nd-pass)
-  rentexProgram = cgCreateProgramFromFile( context, CG_SOURCE, "rentex.cg",
-					   fragProfile, NULL, NULL );
-  cgGLLoadProgram( rentexProgram );
-#endif
+  GLuint p = s_progIsophoto;
+  s_uIso.lightPos = glGetUniformLocation( p, "lightPos" );
 }
 
-void destroyCg()
+void initShaders()
 {
-  cgDestroyProgram( isovProgram );
-  cgDestroyProgram( isofProgram );
+  using namespace bspsgpu_embedded;
+  s_progBsps = createProgramFromSources( bsps_vert_glsl, "bsps.vert.glsl (embedded)",
+                                         bsps_frag_glsl, "bsps.frag.glsl (embedded)" );
+  s_progIsophoto = createProgramFromSources( isophoto_vert_glsl, "isophoto.vert.glsl (embedded)",
+                                             isophoto_frag_glsl, "isophoto.frag.glsl (embedded)" );
+  if ( !s_progBsps || !s_progIsophoto )
+    {
+      std::cerr << "Shader compile/link failed (embedded GLSL)." << std::endl;
+      exit( 1 );
+    }
+  cacheBspsUniforms();
+  cacheIsoUniforms();
+}
 
-  cgDestroyProgram( bspsProgram );
-#ifdef RENDER_TO_TEXTURE
-  cgDestroyProgram( rentexProgram );
-#endif
-#ifdef USE_VBO
-  cgDestroyProgram( vertProgram );
-#endif
-  cgDestroyContext( context );
+void destroyShaders()
+{
+  if ( s_progBsps )
+    glDeleteProgram( s_progBsps );
+  if ( s_progIsophoto )
+    glDeleteProgram( s_progIsophoto );
+  s_progBsps = s_progIsophoto = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
 
+/* Rectangle float RGBA: GL_FLOAT_RGBA_NV is NVIDIA-only and breaks macOS (incomplete / "unloadable" texture). */
+static GLint bspsRectFloatRGBAInternalFormat()
+{
+  if ( GLEW_ARB_texture_float || GLEW_VERSION_3_0 )
+    return GL_RGBA32F;
+#ifdef GL_FLOAT_RGBA_NV
+  if ( glewIsSupported( "GL_NV_float_buffer" ) )
+    return GL_FLOAT_RGBA_NV;
+#endif
+  return GL_RGBA32F;
+}
+
+#ifndef GL_TEXTURE_RECTANGLE_ARB
+#define GL_TEXTURE_RECTANGLE_ARB GL_TEXTURE_RECTANGLE_NV
+#endif
+
+static GLenum bspsRectTexTarget()
+{
+#if defined( GL_TEXTURE_RECTANGLE )
+  return GL_TEXTURE_RECTANGLE;
+#else
+  return GL_TEXTURE_RECTANGLE_ARB;
+#endif
+}
+
 void setTexture( BSPSTexGPU& bspstex )
 {
-  // U Knot Vector
-  GLuint UKnotVec;
-  glGenTextures(1, &UKnotVec);
-  glBindTexture(GL_TEXTURE_RECTANGLE_NV, UKnotVec);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  
-  std::vector<float>& ukv = bspstex.ukv();
-  glTexImage2D( GL_TEXTURE_RECTANGLE_NV, 0, GL_FLOAT_RGBA_NV, 
-		bspstex.max_n_ukv(), bspstex.n_patch(), 
-		0, GL_RGBA, GL_FLOAT, &ukv[0] );
+  const GLenum rectTarget = bspsRectTexTarget();
+  const GLint rectFloatRGBA = bspsRectFloatRGBAInternalFormat();
 
-  cgGLSetTextureParameter( cgGetNamedParameter(bspsProgram, "ukvTex"), UKnotVec );
-  
+  // U Knot Vector
+  glGenTextures( 1, &s_texUKnotVec );
+  glBindTexture( rectTarget, s_texUKnotVec );
+  glTexParameteri( rectTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glTexParameteri( rectTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+
+  std::vector<float>& ukv = bspstex.ukv();
+  glTexImage2D( rectTarget, 0, rectFloatRGBA, bspstex.max_n_ukv(), bspstex.n_patch(), 0, GL_RGBA, GL_FLOAT,
+                &ukv[0] );
+
   // U Knot Texture
-  GLuint UKnotTex;
-  glGenTextures(1, &UKnotTex);
-  glBindTexture(GL_TEXTURE_RECTANGLE_NV, UKnotTex);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glGenTextures( 1, &s_texUKnotTex );
+  glBindTexture( rectTarget, s_texUKnotTex );
+  glTexParameteri( rectTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glTexParameteri( rectTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 
   std::vector<float>& ukt = bspstex.uknottex();
-  glTexImage2D( GL_TEXTURE_RECTANGLE_NV, 0, GL_FLOAT_RGBA_NV, 
-		bspstex.max_h_ukt() * bspstex.max_w_ukt(), bspstex.n_patch(), 
-		0, GL_RGBA, GL_FLOAT, &ukt[0] );
-
-  cgGLSetTextureParameter( cgGetNamedParameter(bspsProgram, "uknotTex2D"), UKnotTex );
+  glTexImage2D( rectTarget, 0, rectFloatRGBA, bspstex.max_h_ukt() * bspstex.max_w_ukt(), bspstex.n_patch(), 0,
+                GL_RGBA, GL_FLOAT, &ukt[0] );
 
   // V Knot Vector
-  GLuint VKnotVec;
-  glGenTextures(1, &VKnotVec);
-  glBindTexture(GL_TEXTURE_RECTANGLE_NV, VKnotVec);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  
-  std::vector<float>& vkv = bspstex.vkv();
-  glTexImage2D( GL_TEXTURE_RECTANGLE_NV, 0, GL_FLOAT_RGBA_NV, 
-		bspstex.max_n_vkv(), bspstex.n_patch(), 
-		0, GL_RGBA, GL_FLOAT, &vkv[0] );
+  glGenTextures( 1, &s_texVKnotVec );
+  glBindTexture( rectTarget, s_texVKnotVec );
+  glTexParameteri( rectTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glTexParameteri( rectTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 
-  cgGLSetTextureParameter( cgGetNamedParameter(bspsProgram, "vkvTex"), VKnotVec );
-  
+  std::vector<float>& vkv = bspstex.vkv();
+  glTexImage2D( rectTarget, 0, rectFloatRGBA, bspstex.max_n_vkv(), bspstex.n_patch(), 0, GL_RGBA, GL_FLOAT,
+                &vkv[0] );
+
   // V Knot Texture
-  GLuint VKnotTex;
-  glGenTextures(1, &VKnotTex);
-  glBindTexture(GL_TEXTURE_RECTANGLE_NV, VKnotTex);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glGenTextures( 1, &s_texVKnotTex );
+  glBindTexture( rectTarget, s_texVKnotTex );
+  glTexParameteri( rectTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glTexParameteri( rectTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 
   std::vector<float>& vkt = bspstex.vknottex();
-  glTexImage2D( GL_TEXTURE_RECTANGLE_NV, 0, GL_FLOAT_RGBA_NV, 
-		bspstex.max_h_vkt() * bspstex.max_w_vkt(), bspstex.n_patch(), 
-		0, GL_RGBA, GL_FLOAT, &vkt[0] );
-
-  cgGLSetTextureParameter( cgGetNamedParameter(bspsProgram, "vknotTex2D"), VKnotTex );
+  glTexImage2D( rectTarget, 0, rectFloatRGBA, bspstex.max_h_vkt() * bspstex.max_w_vkt(), bspstex.n_patch(), 0,
+                GL_RGBA, GL_FLOAT, &vkt[0] );
 
   // Control Points
-  GLuint CpTex;
-  glGenTextures(1, &CpTex);
-  glBindTexture(GL_TEXTURE_RECTANGLE_NV, CpTex);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  
-  std::vector<float>& cp = bspstex.cptex();
-  glTexImage2D( GL_TEXTURE_RECTANGLE_NV, 0, GL_FLOAT_RGBA_NV, 
-		bspstex.max_n_cp(), bspstex.n_patch(),
-		0, GL_RGBA, GL_FLOAT, &cp[0] );
+  glGenTextures( 1, &s_texCp );
+  glBindTexture( rectTarget, s_texCp );
+  glTexParameteri( rectTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glTexParameteri( rectTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 
-  cgGLSetTextureParameter( cgGetNamedParameter(bspsProgram, "cpTex"), CpTex );
+  std::vector<float>& cp = bspstex.cptex();
+  glTexImage2D( rectTarget, 0, rectFloatRGBA, bspstex.max_n_cp(), bspstex.n_patch(), 0, GL_RGBA, GL_FLOAT,
+                &cp[0] );
 
   // Light Texture
-
-  GLuint lightTex;
-  glGenTextures( 1, &lightTex );
-  glBindTexture( GL_TEXTURE_2D, lightTex );
-  glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE );
+  glGenTextures( 1, &s_texLight );
+  glBindTexture( GL_TEXTURE_2D, s_texLight );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-  
+
   PNGImage pngimage;
   std::vector<unsigned char> img;
-  pngimage.inputFromFile("lattice.png", img );
-  
+  pngimage.inputFromFile( "lattice.png", img );
+
   if ( !img.empty() )
     {
       GLint format;
-      if ( pngimage.channel()==3) format = GL_RGB; else format = GL_RGBA;
+      if ( pngimage.channel() == 3 )
+        format = GL_RGB;
+      else
+        format = GL_RGBA;
 
       std::vector<float> fpng;
 
-      for ( int i = 0; i < img.size(); ++i )
-	{
-	  float a =  (float) img[i] / 255.0;
-	  fpng.push_back( a );
-	}
-      glTexImage2D( GL_TEXTURE_2D,
-		    0, format,
-		    pngimage.w(), pngimage.h(),
-		    0, 
-		    format,
-		    GL_FLOAT,
-		    &(fpng[0]) );
-
-      cgGLSetTextureParameter( cgGetNamedParameter(bspsProgram, "lightTex"), lightTex );
-
+      for ( int i = 0; i < (int)img.size(); ++i )
+        {
+          float a = (float)img[i] / 255.0;
+          fpng.push_back( a );
+        }
+      glTexImage2D( GL_TEXTURE_2D, 0, format, pngimage.w(), pngimage.h(), 0, format, GL_FLOAT,
+                    &( fpng[0] ) );
     }
   else
     {
       cerr << "Error." << endl;
     }
+
+  glBindTexture( rectTarget, 0 );
+  glBindTexture( GL_TEXTURE_2D, 0 );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
 
 void initFPBuffer()
 {
-  GLenum err = glewInit();
-  if( err != GLEW_OK ) cout << "Error: %s" << glewGetErrorString(err) << endl;
-
-  wglSwapIntervalEXT(0);
-
 #if 0
   pbuffer = new RenderTextureFBO( calc_width, calc_height, 
 				  texTarget0, texInternalFormat0, texFormat0, texType0, 
@@ -403,9 +409,9 @@ void initFPBuffer()
 
 void MakeGlutWindowCurrent()
 {
-  static int glutWinId = glutGetWindow();
-
-  glutSetWindow( glutWinId );
+  const int win = ::glutGetWindow();
+  if ( win > 0 )
+    ::glutSetWindow( win );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -420,16 +426,8 @@ void displayPolygons()
       float current_light[3];
       pane.getRealLightPosition( current_light );
 
-      cgGLEnableProfile( vertProfile );
-      cgGLBindProgram( isovProgram );
-      
-      cgGLSetStateMatrixParameter( cgGetNamedParameter(isovProgram, "ModelViewProj"),
-				   CG_GL_MODELVIEW_PROJECTION_MATRIX,
-				   CG_GL_MATRIX_IDENTITY );
-
-      cgGLEnableProfile( fragProfile );
-      cgGLBindProgram( isofProgram );
-      cgGLSetParameter3fv(cgGetNamedParameter( isofProgram, "lightPos"), current_light );
+      glUseProgram( s_progIsophoto );
+      glUniform3fv( s_uIso.lightPos, 1, current_light );
     }
   else
     {
@@ -441,8 +439,7 @@ void displayPolygons()
 
   if ( fGPUflag == DISPLAY_ISOPHOTO )
     {
-      cgGLDisableProfile( fragProfile );
-      cgGLDisableProfile( vertProfile );
+      glUseProgram( 0 );
     }
   else
     {
@@ -495,30 +492,41 @@ void displayFragmentGPU()
   float current_light[3];
   pane.getRealLightPosition( current_light );
 //   cout << "light " << current_light[0] << " " << current_light[1] << " " << current_light[2] << endl;
-  cgGLEnableProfile( fragProfile );
-  cgGLBindProgram( bspsProgram );
+  glUseProgram( s_progBsps );
 
-  cgGLSetParameter3fv( cgGetNamedParameter(bspsProgram, "eyePos"), current_eye );
-  cgGLSetParameter3fv( cgGetNamedParameter(bspsProgram, "lightPos"), current_light );
-  cgGLSetParameter3fv( cgGetNamedParameter(bspsProgram, "ambientColor"), &(myMatl[0]) );
-  cgGLSetParameter3fv( cgGetNamedParameter(bspsProgram, "diffuseColor"), &(myMatl[4]) );
-  cgGLSetParameter3fv( cgGetNamedParameter(bspsProgram, "specularColor"), &(myMatl[12]) );
-  cgGLSetParameter1f( cgGetNamedParameter(bspsProgram, "specularShininess"), myMatl[16] );
-  cgGLSetParameter1f( cgGetNamedParameter(bspsProgram, "drawMode"), fGPUflag );
+  glUniform3fv( s_uBsps.eyePos, 1, current_eye );
+  glUniform3fv( s_uBsps.lightPos, 1, current_light );
+  glUniform3fv( s_uBsps.ambientColor, 1, &( myMatl[0] ) );
+  glUniform3fv( s_uBsps.diffuseColor, 1, &( myMatl[4] ) );
+  glUniform3fv( s_uBsps.specularColor, 1, &( myMatl[12] ) );
+  glUniform1f( s_uBsps.specularShininess, myMatl[16] );
+  glUniform1f( s_uBsps.drawMode, (float)fGPUflag );
 
-  cgGLEnableTextureParameter(cgGetNamedParameter(bspsProgram, "ukvTex"));
-  cgGLEnableTextureParameter(cgGetNamedParameter(bspsProgram, "uknotTex2D"));
-  cgGLEnableTextureParameter(cgGetNamedParameter(bspsProgram, "vkvTex"));
-  cgGLEnableTextureParameter(cgGetNamedParameter(bspsProgram, "vknotTex2D"));
-  cgGLEnableTextureParameter(cgGetNamedParameter(bspsProgram, "cpTex"));
-  cgGLEnableTextureParameter(cgGetNamedParameter(bspsProgram, "lightTex"));
+  const GLenum rectTarget = bspsRectTexTarget();
 
-  cgGLSetStateMatrixParameter( cgGetNamedParameter(bspsProgram, "ModelViewProj"),
-			       CG_GL_MODELVIEW_PROJECTION_MATRIX,
-			       CG_GL_MATRIX_IDENTITY );
-  cgGLSetStateMatrixParameter( cgGetNamedParameter(bspsProgram, "ModelViewIT"),
-			       CG_GL_MODELVIEW_MATRIX,
-			       CG_GL_MATRIX_INVERSE_TRANSPOSE );
+  glActiveTexture( GL_TEXTURE0 );
+  glBindTexture( rectTarget, s_texUKnotVec );
+  glUniform1i( s_uBsps.ukvTex, 0 );
+
+  glActiveTexture( GL_TEXTURE1 );
+  glBindTexture( rectTarget, s_texUKnotTex );
+  glUniform1i( s_uBsps.uknotTex2D, 1 );
+
+  glActiveTexture( GL_TEXTURE2 );
+  glBindTexture( rectTarget, s_texVKnotVec );
+  glUniform1i( s_uBsps.vkvTex, 2 );
+
+  glActiveTexture( GL_TEXTURE3 );
+  glBindTexture( rectTarget, s_texVKnotTex );
+  glUniform1i( s_uBsps.vknotTex2D, 3 );
+
+  glActiveTexture( GL_TEXTURE4 );
+  glBindTexture( rectTarget, s_texCp );
+  glUniform1i( s_uBsps.cpTex, 4 );
+
+  glActiveTexture( GL_TEXTURE5 );
+  glBindTexture( GL_TEXTURE_2D, s_texLight );
+  glUniform1i( s_uBsps.lightTex, 5 );
     
 #ifndef USE_OLD
 
@@ -570,14 +578,21 @@ void displayFragmentGPU()
 
 #endif
 
-  cgGLDisableTextureParameter(cgGetNamedParameter(bspsProgram, "ukvTex"));
-  cgGLDisableTextureParameter(cgGetNamedParameter(bspsProgram, "uknotTex2D"));
-  cgGLDisableTextureParameter(cgGetNamedParameter(bspsProgram, "vkvTex"));
-  cgGLDisableTextureParameter(cgGetNamedParameter(bspsProgram, "vknotTex2D"));
-  cgGLDisableTextureParameter(cgGetNamedParameter(bspsProgram, "cpTex"));
-  cgGLDisableTextureParameter(cgGetNamedParameter(bspsProgram, "lightTex"));
-  
-  cgGLDisableProfile( fragProfile );
+  glActiveTexture( GL_TEXTURE0 );
+  glBindTexture( rectTarget, 0 );
+  glActiveTexture( GL_TEXTURE1 );
+  glBindTexture( rectTarget, 0 );
+  glActiveTexture( GL_TEXTURE2 );
+  glBindTexture( rectTarget, 0 );
+  glActiveTexture( GL_TEXTURE3 );
+  glBindTexture( rectTarget, 0 );
+  glActiveTexture( GL_TEXTURE4 );
+  glBindTexture( rectTarget, 0 );
+  glActiveTexture( GL_TEXTURE5 );
+  glBindTexture( GL_TEXTURE_2D, 0 );
+  glActiveTexture( GL_TEXTURE0 );
+
+  glUseProgram( 0 );
 
 #ifndef RENDER_TO_TEXTURE
 
@@ -764,8 +779,60 @@ void displayFragmentGPU()
 
 ////////////////////////////////////////////////////////////////////////////////////
 
+static bool s_glResourcesReady = false;
+
+/* One-shot GL loader + mesh GPU setup (after a valid OpenGL context exists). */
+static void initGLResourcesOnce()
+{
+  if ( s_glResourcesReady )
+    return;
+
+  MakeGlutWindowCurrent();
+
+  glewExperimental = GL_TRUE;
+  GLenum err = glewInit();
+  if ( err != GLEW_OK )
+    std::cerr << "glewInit: " << glewGetErrorString( err ) << std::endl;
+
+#if defined( _WIN32 )
+  if ( WGLEW_EXT_swap_control )
+    wglSwapIntervalEXT( 0 );
+#endif
+
+  initShaders();
+  setTexture( bspstex );
+
+  pane.initGL();
+  pane.setIsGradientBackground( false );
+  pane.setLightParameters( 0, myLight );
+
+  glmeshvbo.setMesh( mesh );
+  glmeshvbo.setIsSmoothShading( true );
+  glmeshvbo.setMaterial( myMatl );
+  glmeshvbo.setIsDrawWireframe( pwfflag );
+
+  glmeshr.setMesh( mesh );
+  glmeshr.setIsSmoothShading( false );
+  glmeshr.setMaterial( myMatl );
+
+  s_glResourcesReady = true;
+}
+
+static void reshape( int w, int h )
+{
+  MakeGlutWindowCurrent();
+
+  if ( !s_glResourcesReady && w > 0 && h > 0 )
+    initGLResourcesOnce();
+
+  pane.reshape( w, h );
+}
+
 void display()
 {
+  if ( !s_glResourcesReady )
+    initGLResourcesOnce();
+
   pane.clear( calc_width, calc_height );
 
   if ( (fGPUflag == DISPLAY_POLYGON) || (fGPUflag == DISPLAY_ISOPHOTO) )
@@ -801,7 +868,7 @@ void display()
 void mouse( int button, int state, int x, int y )
 {
   pane.setScreenXY( x, y );
-  
+
   // Rotate
   if ( state == GLUT_DOWN )
     {
@@ -917,7 +984,19 @@ void keyboard( unsigned char c, int x, int y )
       //pane.setPNGFile( "save_screen.png" );
       
       break;
-      
+
+    case '+':
+    case '=':
+      pane.setScreenXY( x, y );
+      pane.updateWheelZoom( 1 );
+      break;
+
+    case '-':
+    case '_':
+      pane.setScreenXY( x, y );
+      pane.updateWheelZoom( -1 );
+      break;
+
     default:
       break;
       
@@ -996,24 +1075,24 @@ int main( int argc, char **argv )
     }
 #endif
 
-  ::glutInitWindowSize( width, height );
+  /* freeglut requires glutInit() before glutInitWindowSize(); Apple GLUT tolerated the reverse. */
   ::glutInit( &argc, argv );
+  ::glutInitWindowSize( width, height );
   //::glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGBA | GLUT_ALPHA | GLUT_DEPTH | GLUT_STENCIL );
   ::glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH );
   ::glutCreateWindow( argv[0] );
-  
+  MakeGlutWindowCurrent();
+
+  ::glutReshapeFunc( reshape );
   ::glutDisplayFunc( display );
   ::glutKeyboardFunc( keyboard );
   ::glutMouseFunc( mouse );
   ::glutMotionFunc( motion );
   ::glutIdleFunc( idle );
-  
+
   pane.init( width, height );
 
-  // Initialize float pbuffer
   initFPBuffer();
-  initCg();
-  setTexture( bspstex );
 
 #ifdef USE_VAR
   var = new RenderableVertexArray( pbuffer_width * pbuffer_height, 1 );
@@ -1023,24 +1102,12 @@ int main( int argc, char **argv )
   rva = new RenderVertexArray( pbuffer_width * pbuffer_height, 3 );
 #endif
 
-  // Initialize some state for the GLUT window's rendering context.
-  MakeGlutWindowCurrent();
-  pane.initGL();
-  pane.setIsGradientBackground( false );
-  pane.setLightParameters( 0, myLight );
-
-  // Initialize display mode
+  /* Display mode (GLEW / shaders / VBO init runs on first display — see initGLResourcesOnce). */
   fGPUflag = DISPLAY_FRAGGPU;
   sprintf( typebuf, "GPU Shading" );
 
-  glmeshvbo.setMesh( mesh );
-  glmeshvbo.setIsSmoothShading( true );
-  glmeshvbo.setMaterial( myMatl );
-  glmeshvbo.setIsDrawWireframe( pwfflag );
-
-  glmeshr.setMesh( mesh );
-  glmeshr.setIsSmoothShading( false );
-  glmeshr.setMaterial( myMatl );
+  /* Establish viewport + run initGLResourcesOnce while the context is current (before first display). */
+  reshape( width, height );
 
 #if 0
   if ( argc == 3 )
