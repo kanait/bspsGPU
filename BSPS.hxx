@@ -233,6 +233,88 @@ public:
     return (vkv_[0] + ( vkv_[vkv_.size()-1] - vkv_[0] ) * (float) j / (float) vdiv);
   };
 
+private:
+
+  // CPU mesh / research only: linear span search so polygonize() cannot hang when
+  // knot indexing disagrees with the legacy binary search. GPU-related code uses eval3().
+  int findSpan3_polygonizeAux( float t, int m, const std::vector<float>& kv ) const
+  {
+    if ( fabs( t - kv[m-3] ) < 1.0e-05 )
+      return m-4;
+    const int low = 3;
+    const int high = m - 3;
+    for ( int i = low; i < high; ++i )
+      {
+	if ( t >= kv[i] && t < kv[i + 1] )
+	  return i;
+      }
+    if ( t >= kv[high] )
+      return high - 1;
+    return low;
+  }
+
+  void eval3_polygonize( float u, float v, Point3f& pt, Vector3f& nrm )
+  {
+    int uid = findSpan3_polygonizeAux( u, (int)ukv_.size() - 1, ukv_ );
+
+    std::vector<float> uknot( 6 );
+    std::vector<float> ukd( 6 );
+    fetchKnots3( uid, uknot, ukd, ukv_ );
+
+    std::vector<float> Nu( 4 );
+    std::vector<float> dNu( 4 );
+    basisFunc3( u, uknot, ukd, Nu, dNu );
+
+    int vid = findSpan3_polygonizeAux( v, (int)vkv_.size() - 1, vkv_ );
+    std::vector<float> vknot( 6 );
+    std::vector<float> vkd( 6 );
+    fetchKnots3( vid, vknot, vkd, vkv_ );
+
+    std::vector<float> Nv( 4 );
+    std::vector<float> dNv( 4 );
+    basisFunc3( v, vknot, vkd, Nv, dNv );
+
+    int iu = uid - 3;
+    int iv = vid - 3;
+    std::vector<Point4f> cp( 16 );
+    fetchCp3( iu, iv, cp, n_vcp_, cp_ );
+
+    Point4f pt4( .0f, .0f, .0f, .0f );
+    for ( int i = 0; i < 4; ++i )
+      {
+	for ( int j = 0; j < 4; ++j )
+	  {
+	    pt4 += ( Nu[i] * Nv[j] * cp[4 * i + j] );
+	  }
+      }
+    pt.set( pt4.x, pt4.y, pt4.z );
+
+    Point4f pu4( .0f, .0f, .0f, .0f );
+    for ( int i = 0; i < 4; ++i )
+      {
+	for ( int j = 0; j < 4; ++j )
+	  {
+	    pu4 += ( dNu[i] * Nv[j] * cp[4 * i + j] );
+	  }
+      }
+
+    Point4f pv4( .0f, .0f, .0f, .0f );
+    for ( int i = 0; i < 4; ++i )
+      {
+	for ( int j = 0; j < 4; ++j )
+	  {
+	    pv4 += ( Nu[i] * dNv[j] * cp[4 * i + j] );
+	  }
+      }
+    Vector3f pu( pu4.x, pu4.y, pu4.z );
+    Vector3f pv( pv4.x, pv4.y, pv4.z );
+
+    nrm.cross( pu, pv );
+    nrm.normalize();
+  }
+
+public:
+
 #if 1
   void polygonize( MeshR& mesh, int udiv, int vdiv ) {
     
@@ -248,7 +330,7 @@ public:
 	    float v = paramV( j, vdiv );
 
 	    Point3f pt; Vector3f n;
-	    eval3( u, v, pt, n );
+	    eval3_polygonize( u, v, pt, n );
 
 	    mesh.addPoint( pt.x, pt.y, pt.z );
 

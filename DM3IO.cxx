@@ -14,7 +14,7 @@
 
 namespace {
 
-// Any brep face surface that provides a NURBS form (proxy or native).
+// Any brep surface that provides a NURBS form (proxy or native).
 static bool tryGetNurbForm( const ON_Surface* srf, ON_NurbsSurface& nbs )
 {
   if ( nullptr == srf )

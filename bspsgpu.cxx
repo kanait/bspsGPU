@@ -1103,7 +1103,7 @@ int main( int argc, char **argv )
   rva = new RenderVertexArray( pbuffer_width * pbuffer_height, 3 );
 #endif
 
-  /* Display mode (GLEW / shaders / VBO init runs on first display â€” see initGLResourcesOnce). */
+  /* Display mode (GLEW / shaders / VBO init runs on first display — see initGLResourcesOnce). */
   fGPUflag = DISPLAY_FRAGGPU;
   sprintf( typebuf, "GPU Shading" );
 
