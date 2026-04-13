@@ -3,10 +3,10 @@
 // In the submodule, opennurbs_zlib_memory.cpp defines them in a C++
 // translation unit without extern "C", so on ELF the symbols do not
 // satisfy the C references from deflate.c / inflate.c. Provide C
-// wrappers here and forward to oncalloc / onfree (see opennurbs_memory.h).
+// wrappers here and forward to oncalloc / onfree.
 ////////////////////////////////////////////////////////////////////
 
-#include "opennurbs_memory.h"
+#include "opennurbs.h"
 
 extern "C" {
 

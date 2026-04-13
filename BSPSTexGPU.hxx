@@ -162,13 +162,12 @@ public:
 
     // calculate the maximum number of knots and knot differences of u
 
-    // 
-    // w_ukt_(w_vkt_) の値
-    //    - 3 次 ... w_ukt_ = 4 (12 (個の要素) / 3 (1 つのピクセルに 3 つずつ格納))
-    //    - 5 次 ... w_ukt_ = 7 (knot: 10 個 ... 3 ピクセル, kd: 15 個 ... 4 ピクセル)
-    //    max_w_ukt_ はその最大値をとる
     //
-    // 初期値は 4 (BSP_CUBIC であると想定)
+    // w_ukt_ / w_vkt_: tex width in float4 columns (knots + knot differences packed).
+    //   cubic (deg 3): w_ukt_ = 4  (12 floats / 3 per RGBA texel)
+    //   quintic (deg 5): w_ukt_ = 7 (10 knot + 15 kd floats -> 3 + 4 texels)
+    // max_w_ukt_ is the max over patches; initial layout assumes BSP_CUBIC (4).
+    //
     max_w_ukt_ = 4;
     for ( int i = 0; i < bsps.size(); ++i )
       {
@@ -263,7 +262,7 @@ public:
       }
 	
     // calculate the maximum number of knots and knot differences of v
-    max_w_vkt_ = 4; // 12 (個の要素) / 3 (1 つのピクセルに 3 つずつ格納)
+    max_w_vkt_ = 4; // 12 floats / 3 per RGBA texel (cubic)
     for ( int i = 0; i < bsps.size(); ++i )
       {
 	pv_ = bsps[i].v_degree();
@@ -372,7 +371,7 @@ public:
 	  max_n_cp_ = bsps[i].n_cp();
       }
 
-    // 各行の最初のピクセルに情報を記述
+    // First texel per patch: packed header (degrees, CP layout; see rows below)
     //    0   1        2
     // R  udeg  cp[0].x cp[1].x ...
     // G  vdeg  cp[0].y cp[1].y ...
@@ -459,8 +458,8 @@ public:
   void storeKnotTex( std::vector<float>& uknot, std::vector<float>& vknot ) {
     
     int n;
-    h_ukt_ = uknot.size() - 2 * pu_; // span の範囲
-    w_ukt_ = 4; // 12 (個の要素) / 3 (1 つのピクセルに 3 つずつ格納)
+    h_ukt_ = uknot.size() - 2 * pu_; // number of knot spans in u
+    w_ukt_ = 4; // 12 floats / 3 per RGBA texel (cubic)
     uknottex_.resize( h_ukt_ * w_ukt_ * RGBA );
     n = RGBA*w_ukt_;
     for ( int i = 0; i < h_ukt_; ++i )
@@ -486,8 +485,8 @@ public:
 	uknottex_[n*i+15] = .0f;
       }
 
-    h_vkt_ = vknot.size() - 2 * pv_; // span の範囲
-    w_vkt_ = 4; // 12 (個の要素) / 3 (1 つのピクセルに 3 つずつ格納)
+    h_vkt_ = vknot.size() - 2 * pv_; // number of knot spans in v
+    w_vkt_ = 4; // 12 floats / 3 per RGBA texel (cubic)
     vknottex_.resize( h_vkt_ * w_vkt_ * RGBA );
     n = RGBA*w_vkt_;
     for ( int i = 0; i < h_vkt_; ++i )
@@ -533,11 +532,11 @@ private:
 
   int n_patch_; // the number of patches
 
-  int mu_; // ノットベクトルの数 (= uknot.size()-1)
-  int mv_; // ノットベクトルの数 (= vknot.size()-1)
+  int mu_; // U knot vector extent (= uknot.size()-1)
+  int mv_; // V knot vector extent (= vknot.size()-1)
 
-  int pu_; // 次数 (=3)
-  int pv_; // 次数 (=3)
+  int pu_; // degree (=3)
+  int pv_; // degree (=3)
 
   int max_n_ukv_;
   int n_ukv_;
