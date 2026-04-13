@@ -19,7 +19,6 @@ set( CMAKE_WARN_DEPRECATED "${_bspsgpu_warn_deprecated}" )
 # --- Dependencies for the viewer / I/O ---
 find_package(OpenGL REQUIRED)
 find_package(ZLIB REQUIRED)
-find_package(PNG REQUIRED)
 
 # GLEW: vcpkg supplies CONFIG mode (GLEW::GLEW); otherwise fall back to FindGLEW / manual find.
 find_package( GLEW CONFIG QUIET )
@@ -99,6 +98,7 @@ add_executable( bspsgpu
   DM3IO.cxx
   POLIO.cxx
   opennurbs_zlib_alloc_glue.cxx
+  stb_image_impl.cxx
 )
 
 target_sources( bspsgpu PRIVATE "${_bspsgpu_embedded_h}" )
@@ -108,6 +108,7 @@ target_include_directories( bspsgpu PRIVATE
   "${_bspsgpu_generated_dir}"
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/external/render"
+  "${CMAKE_CURRENT_SOURCE_DIR}/external/stb"
   "${CMAKE_CURRENT_SOURCE_DIR}/external/vecmath-cpp"
 )
 
@@ -124,7 +125,6 @@ target_link_libraries( bspsgpu PRIVATE
   OpenGL::GL
   OpenGL::GLU
   GLEW::GLEW
-  PNG::PNG
   ZLIB::ZLIB
   ${_bspsgpu_glut_target}
 )

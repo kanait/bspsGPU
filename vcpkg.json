@@ -5,7 +5,6 @@
   "description": "Optional dependencies for Visual Studio + vcpkg (Windows). Configure with -DCMAKE_TOOLCHAIN_FILE=[vcpkg]/scripts/buildsystems/vcpkg.cmake",
   "dependencies": [
     "zlib",
-    "libpng",
     "glew",
     {
       "name": "freeglut",

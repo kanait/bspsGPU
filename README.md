@@ -8,6 +8,8 @@ The original code (2004–2007) targeted **NVIDIA Cg**. The current tree uses **
 
 Rhino **.3dm** import uses **[OpenNURBS](https://github.com/mcneel/opennurbs)** as a **git submodule** at `external/opennurbs` (static library `opennurbsStatic`, C++17). The reader path uses current OpenNURBS APIs (`ONX_Model` / `ON_ModelGeometryComponent`, and so on).
 
+**Raster images (e.g. `lattice.png`):** decoding uses **[stb_image](https://github.com/nothings/stb)** (`external/stb/stb_image.h`, [MIT / public domain](https://github.com/nothings/stb/blob/master/LICENSE)). A small header `PNGImage.hxx` wraps `stbi_load` for the few call sites in `bspsgpu.cxx`; **`stb_image_impl.cxx`** is the only translation unit that defines `STB_IMAGE_IMPLEMENTATION` (see stb’s usage notes). **libpng** is not required for the viewer build.
+
 ## Getting started (CMake)
 
 Clone **with submodules** so `external/opennurbs`, `external/vecmath-cpp`, and `external/render` are populated:
@@ -24,7 +26,7 @@ cmake --build build
 
 ### Windows (Visual Studio + vcpkg)
 
-The repo includes **`vcpkg.json`** (GLEW, zlib, libpng, and **freeglut** on Windows). From a **Developer Command Prompt** or Visual Studio’s CMake integration, point CMake at the vcpkg toolchain file, then configure and build:
+The repo includes **`vcpkg.json`** (GLEW, zlib, and **freeglut** on Windows; PNG loading is via vendored **stb_image**, not vcpkg’s libpng). From a **Developer Command Prompt** or Visual Studio’s CMake integration, point CMake at the vcpkg toolchain file, then configure and build:
 
 ```bat
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
@@ -57,7 +59,8 @@ An older **Win32/x64** zip release (Cg-era) is still available for reference:
 | **OpenGL** + **GLU** | System frameworks / packages |
 | **[GLEW](http://glew.sourceforge.net/)** | e.g. `libglew-dev` (Debian/Ubuntu), `glew` (Homebrew), or vcpkg port `glew` (CONFIG) on Windows |
 | **GLUT** | macOS **GLUT.framework**, Linux **freeglut** / **libglut**; Windows + vcpkg uses port **`freeglut`** (`FreeGLUT::freeglut`) |
-| **zlib**, **libpng** | e.g. `zlib1g-dev`, `libpng-dev` on Debian/Ubuntu (used with PNG; OpenNURBS also builds its prefixed zlib in-tree) |
+| **zlib** | e.g. `zlib1g-dev` on Debian/Ubuntu (OpenNURBS / system packages) |
+| **stb_image** | Vendored at `external/stb/stb_image.h` ([nothings/stb](https://github.com/nothings/stb)); used for optional PNG/JPEG/etc. textures (**no libpng** in CMake or `vcpkg.json`) |
 | **[vecmath-cpp](https://github.com/yuki12/vecmath-cpp)** | Submodule `external/vecmath-cpp` |
 | **[render](https://github.com/kanait/render)** | Submodule `external/render` |
 
