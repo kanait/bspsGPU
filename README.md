@@ -4,11 +4,11 @@ bspsGPU is research-purpose software for evaluating non-uniform B-spline surface
 
 Takashi Kanai: “Fragment-based Evaluation of Non-Uniform B-spline Surfaces on GPUs”, Computer-Aided Design and Applications (Proc. CAD’07 Conference, Honolulu, Hawaii, 25–29 June, 2007), Vol.4, Nos.1–4, pp.287–294, 2007.
 
-The original code (2004–2007) targeted **NVIDIA Cg**. The current tree uses **OpenGL + GLSL** (via GLEW), builds with **CMake**, and has been verified on **macOS**, **Ubuntu**, and **Windows** (Visual Studio with **vcpkg**). A **Visual Studio** solution (`bspsgpu.sln`) may still be present for older workflows; the maintained build path is CMake.
+The original code (2004–2007) targeted **NVIDIA Cg**. The current tree uses **OpenGL + GLSL** (via GLEW), builds with **CMake**, and has been verified on **macOS**, **Ubuntu**, and **Windows** (Visual Studio with **vcpkg**). 
 
 Rhino **.3dm** import uses **[OpenNURBS](https://github.com/mcneel/opennurbs)** as a **git submodule** at `external/opennurbs` (static library `opennurbsStatic`, C++17). The reader path uses current OpenNURBS APIs (`ONX_Model` / `ON_ModelGeometryComponent`, and so on).
 
-**Raster images (e.g. `lattice.png`):** decoding uses **[stb_image](https://github.com/nothings/stb)** (`external/stb/stb_image.h`, [MIT / public domain](https://github.com/nothings/stb/blob/master/LICENSE)). A small header `PNGImage.hxx` wraps `stbi_load` for the few call sites in `bspsgpu.cxx`; **`stb_image_impl.cxx`** is the only translation unit that defines `STB_IMAGE_IMPLEMENTATION` (see stb’s usage notes). **libpng** is not required for the viewer build.
+**Raster images (e.g. `lattice.png`):** decoding uses **[stb_image](https://github.com/nothings/stb)** (`external/stb/stb_image.h`, [MIT / public domain](https://github.com/nothings/stb/blob/master/LICENSE)). A small header `PNGImage.hxx` wraps `stbi_load` for the few call sites in `bspsgpu.cxx`; `**stb_image_impl.cxx`** is the only translation unit that defines `STB_IMAGE_IMPLEMENTATION` (see stb’s usage notes). **libpng** is not required for the viewer build.
 
 ## Getting started (CMake)
 
@@ -26,7 +26,7 @@ cmake --build build
 
 ### Windows (Visual Studio + vcpkg)
 
-The repo includes **`vcpkg.json`** (GLEW, zlib, and **freeglut** on Windows; PNG loading is via vendored **stb_image**, not vcpkg’s libpng). From a **Developer Command Prompt** or Visual Studio’s CMake integration, point CMake at the vcpkg toolchain file, then configure and build:
+The repo includes `**vcpkg.json**` (GLEW, zlib, and **freeglut** on Windows; PNG loading is via vendored **stb_image**, not vcpkg’s libpng). From a **Developer Command Prompt** or Visual Studio’s CMake integration, point CMake at the vcpkg toolchain file, then configure and build:
 
 ```bat
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
@@ -51,18 +51,20 @@ An older **Win32/x64** zip release (Cg-era) is still available for reference:
 
 ## Prerequisites (CMake build)
 
-| Component | Notes |
-|-----------|--------|
-| **CMake** | 3.16 or newer (matches OpenNURBS and this project) |
-| **C++17** compiler | GCC, Clang, MSVC (OpenNURBS upstream expectation) |
-| **[OpenNURBS](https://github.com/mcneel/opennurbs)** | Git submodule `external/opennurbs` (initialized with `--recursive` or `git submodule update --init`) |
-| **OpenGL** + **GLU** | System frameworks / packages |
-| **[GLEW](http://glew.sourceforge.net/)** | e.g. `libglew-dev` (Debian/Ubuntu), `glew` (Homebrew), or vcpkg port `glew` (CONFIG) on Windows |
-| **GLUT** | macOS **GLUT.framework**, Linux **freeglut** / **libglut**; Windows + vcpkg uses port **`freeglut`** (`FreeGLUT::freeglut`) |
-| **zlib** | e.g. `zlib1g-dev` on Debian/Ubuntu (OpenNURBS / system packages) |
-| **stb_image** | Vendored at `external/stb/stb_image.h` ([nothings/stb](https://github.com/nothings/stb)); used for optional PNG/JPEG/etc. textures (**no libpng** in CMake or `vcpkg.json`) |
-| **[vecmath-cpp](https://github.com/yuki12/vecmath-cpp)** | Submodule `external/vecmath-cpp` |
-| **[render](https://github.com/kanait/render)** | Submodule `external/render` |
+
+| Component                                                | Notes                                                                                                                                                                       |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CMake**                                                | 3.16 or newer (matches OpenNURBS and this project)                                                                                                                          |
+| **C++17** compiler                                       | GCC, Clang, MSVC (OpenNURBS upstream expectation)                                                                                                                           |
+| **[OpenNURBS](https://github.com/mcneel/opennurbs)**     | Git submodule `external/opennurbs` (initialized with `--recursive` or `git submodule update --init`)                                                                        |
+| **OpenGL** + **GLU**                                     | System frameworks / packages                                                                                                                                                |
+| **[GLEW](http://glew.sourceforge.net/)**                 | e.g. `libglew-dev` (Debian/Ubuntu), `glew` (Homebrew), or vcpkg port `glew` (CONFIG) on Windows                                                                             |
+| **GLUT**                                                 | macOS **GLUT.framework**, Linux **freeglut** / **libglut**; Windows + vcpkg uses port `**freeglut`** (`FreeGLUT::freeglut`)                                                 |
+| **zlib**                                                 | e.g. `zlib1g-dev` on Debian/Ubuntu (OpenNURBS / system packages)                                                                                                            |
+| **stb_image**                                            | Vendored at `external/stb/stb_image.h` ([nothings/stb](https://github.com/nothings/stb)); used for optional PNG/JPEG/etc. textures (**no libpng** in CMake or `vcpkg.json`) |
+| **[vecmath-cpp](https://github.com/yuki12/vecmath-cpp)** | Submodule `external/vecmath-cpp`                                                                                                                                            |
+| **[render](https://github.com/kanait/render)**           | Submodule `external/render`                                                                                                                                                 |
+
 
 **Cg Toolkit** is no longer used for the CMake viewer path.
 
@@ -72,7 +74,7 @@ After `git submodule update --remote external/opennurbs`, run a full rebuild. Ke
 
 ## Authors
 
-* **[Takashi Kanai](https://graphics.c.u-tokyo.ac.jp/hp/en/)** — The University of Tokyo
+- **[Takashi Kanai](https://graphics.c.u-tokyo.ac.jp/hp/en/)** — The University of Tokyo
 
 ## License
 
